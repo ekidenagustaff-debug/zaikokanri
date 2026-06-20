@@ -9,6 +9,7 @@ const links = [
   { href: "/sales", label: "💰 販売記録" },
   { href: "/movements", label: "🔄 在庫移動" },
   { href: "/accounting", label: "📊 会計" },
+  { href: "/wix-orders", label: "🛒 Wix受注" },
 ];
 
 export default function Nav() {
