@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import Nav from "@/components/Nav";
+import Shell from "@/components/Shell";
 import type { MovementRecord, Product } from "@/lib/notion";
 
 const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"];
@@ -51,9 +51,7 @@ export default function MovementsPage() {
   }
 
   return (
-    <div>
-      <Nav />
-      <main className="max-w-7xl mx-auto px-4 py-6">
+    <Shell>
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-gray-800">🔄 在庫移動</h1>
           <button
@@ -179,8 +177,7 @@ export default function MovementsPage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </Shell>
   );
 }
 

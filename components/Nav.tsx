@@ -3,13 +3,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 const links = [
-  { href: "/", label: "🏠 ダッシュボード" },
-  { href: "/products", label: "📋 商品マスタ" },
-  { href: "/inventory", label: "📦 在庫" },
-  { href: "/sales", label: "💰 販売記録" },
-  { href: "/movements", label: "🔄 在庫移動" },
-  { href: "/accounting", label: "📊 会計" },
-  { href: "/wix-orders", label: "🛒 Wix受注" },
+  { href: "/", label: "ダッシュボード", icon: "⊞" },
+  { href: "/products", label: "商品マスタ", icon: "≡" },
+  { href: "/inventory", label: "在庫", icon: "◫" },
+  { href: "/sales", label: "販売記録", icon: "¥" },
+  { href: "/movements", label: "在庫移動", icon: "⇄" },
+  { href: "/accounting", label: "会計", icon: "∑" },
+  { href: "/wix-orders", label: "Wix受注", icon: "⊕" },
 ];
 
 export default function Nav() {
@@ -22,27 +22,33 @@ export default function Nav() {
   }
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
-        <div className="flex items-center gap-1">
-          <span className="font-bold text-gray-800 mr-4">📦 在庫管理</span>
-          {links.map((l) => (
+    <nav className="fixed top-0 left-0 h-full w-52 bg-slate-900 text-white flex flex-col z-40">
+      <div className="px-5 py-5 border-b border-slate-700">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">在庫管理</p>
+      </div>
+      <div className="flex-1 py-3 overflow-y-auto">
+        {links.map((l) => {
+          const active = pathname === l.href;
+          return (
             <Link
               key={l.href}
               href={l.href}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                pathname === l.href
-                  ? "bg-blue-100 text-blue-700"
-                  : "text-gray-600 hover:bg-gray-100"
+              className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                active
+                  ? "bg-blue-600 text-white font-medium"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800"
               }`}
             >
+              <span className="text-base w-5 text-center">{l.icon}</span>
               {l.label}
             </Link>
-          ))}
-        </div>
+          );
+        })}
+      </div>
+      <div className="px-4 py-4 border-t border-slate-700">
         <button
           onClick={logout}
-          className="text-sm text-gray-500 hover:text-gray-700 transition"
+          className="w-full text-left text-xs text-slate-500 hover:text-slate-300 transition px-3 py-2"
         >
           ログアウト
         </button>

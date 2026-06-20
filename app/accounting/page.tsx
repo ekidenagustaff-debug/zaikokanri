@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import Nav from "@/components/Nav";
+import Shell from "@/components/Shell";
 import type { SaleRecord, Product } from "@/lib/notion";
 
 export default function AccountingPage() {
@@ -43,9 +43,7 @@ export default function AccountingPage() {
   }
 
   return (
-    <div>
-      <Nav />
-      <main className="max-w-7xl mx-auto px-4 py-6">
+    <Shell>
         <h1 className="text-xl font-bold text-gray-800 mb-6">📊 会計サマリー</h1>
 
         {loading ? (
@@ -108,8 +106,7 @@ export default function AccountingPage() {
             </div>
           </>
         )}
-      </main>
-    </div>
+      </Shell>
   );
 }
 
