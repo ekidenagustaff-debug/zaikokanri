@@ -25,15 +25,31 @@ export default function WixOrdersPage() {
   const [end, setEnd] = useState(today);
   const [orders, setOrders] = useState<WixOrderRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ added: number; skipped: number } | null>(null);
   const [fetched, setFetched] = useState(false);
 
   async function fetchOrders() {
     setLoading(true);
+    setImportResult(null);
     const res = await fetch(`/api/wix/orders?start=${start}&end=${end}`);
     const data = await res.json();
     setOrders(data);
     setFetched(true);
     setLoading(false);
+  }
+
+  async function importToNotion() {
+    setImporting(true);
+    setImportResult(null);
+    const res = await fetch("/api/wix/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(orders),
+    });
+    const result = await res.json();
+    setImportResult(result);
+    setImporting(false);
   }
 
   const total = orders.reduce((s, r) => s + r.price * r.quantity, 0);
@@ -45,7 +61,7 @@ export default function WixOrdersPage() {
         <h1 className="text-xl font-bold text-gray-800 mb-6">🛒 Wix 受注リスト</h1>
 
         {/* 期間選択 */}
-        <div className="bg-white rounded-xl shadow p-4 mb-6 flex items-end gap-4">
+        <div className="bg-white rounded-xl shadow p-4 mb-4 flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-xs text-gray-500 mb-1">開始日</label>
             <input
@@ -71,6 +87,17 @@ export default function WixOrdersPage() {
           >
             {loading ? "取得中..." : "取得"}
           </button>
+
+          {fetched && orders.length > 0 && (
+            <button
+              onClick={importToNotion}
+              disabled={importing}
+              className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+            >
+              {importing ? "インポート中..." : "📥 販売記録に取り込む"}
+            </button>
+          )}
+
           {fetched && (
             <div className="ml-auto text-right">
               <p className="text-xs text-gray-500">{orders.length} 行</p>
@@ -78,6 +105,13 @@ export default function WixOrdersPage() {
             </div>
           )}
         </div>
+
+        {/* インポート結果 */}
+        {importResult && (
+          <div className={`rounded-lg px-4 py-3 mb-4 text-sm font-medium ${importResult.added > 0 ? "bg-green-50 text-green-800" : "bg-gray-50 text-gray-700"}`}>
+            ✅ {importResult.added} 件追加、{importResult.skipped} 件はすでに登録済みのためスキップしました
+          </div>
+        )}
 
         {fetched && (
           <div className="bg-white rounded-xl shadow overflow-x-auto">
