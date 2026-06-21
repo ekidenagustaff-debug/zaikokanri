@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseSale } from "@/lib/notion";
+import { decreaseInventory } from "@/lib/inventory-sync";
 
 export async function GET() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,5 +40,8 @@ export async function POST(req: NextRequest) {
     parent: { data_source_id: DS.sales, type: "data_source_id" },
     properties: props as Parameters<typeof notion.pages.create>[0]["properties"],
   });
+
+  await decreaseInventory(body.商品PageId ?? null, body.販売拠点, body.販売数 ?? 1);
+
   return NextResponse.json(parseSale(page));
 }

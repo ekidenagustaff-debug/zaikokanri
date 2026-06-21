@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseMovement } from "@/lib/notion";
+import { decreaseInventory, increaseInventory } from "@/lib/inventory-sync";
 
 export async function GET() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,5 +39,11 @@ export async function POST(req: NextRequest) {
     parent: { data_source_id: DS.movements, type: "data_source_id" },
     properties: props as Parameters<typeof notion.pages.create>[0]["properties"],
   });
+
+  await Promise.all([
+    decreaseInventory(body.商品PageId ?? null, body.移動元, body.移動数 ?? 0),
+    increaseInventory(body.商品PageId ?? null, body.移動先, body.移動数 ?? 0),
+  ]);
+
   return NextResponse.json(parseMovement(page));
 }
