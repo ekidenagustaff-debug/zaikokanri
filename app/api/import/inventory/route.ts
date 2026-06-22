@@ -53,7 +53,7 @@ async function getAllInventoryRecords(): Promise<Map<string, string>> {
 export async function GET(req: NextRequest) {
   // 簡易認証：クエリパラメータで secret を確認
   const secret = req.nextUrl.searchParams.get("secret");
-  if (secret !== process.env.CRON_SECRET) {
+  if (secret !== (process.env.CRON_SECRET ?? "").trim()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

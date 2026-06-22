@@ -26,7 +26,7 @@ async function getImportedOrderNumbers(): Promise<Set<string>> {
 export async function GET(req: NextRequest) {
   // Vercel Cron Jobs の認証チェック
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${(process.env.CRON_SECRET ?? "").trim()}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
