@@ -5,9 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 const links = [
   { href: "/", label: "ダッシュボード", icon: "⊞" },
   { href: "/products", label: "商品マスタ", icon: "≡" },
-  { href: "/inventory", label: "在庫", icon: "◫" },
+  { href: "/inventory", label: "在庫・移動", icon: "◫" },
   { href: "/sales", label: "販売記録", icon: "¥" },
-  { href: "/movements", label: "在庫移動", icon: "⇄" },
   { href: "/accounting", label: "会計", icon: "∑" },
   { href: "/wix-orders", label: "Wix受注", icon: "⊕" },
 ];

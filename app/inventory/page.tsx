@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
-import type { Product } from "@/lib/notion";
+import type { Product, MovementRecord } from "@/lib/notion";
 
 const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会", "オンライン"] as const;
 type Location = (typeof LOCATIONS)[number];
@@ -15,25 +15,37 @@ function stockColor(n: number): string {
   return "text-slate-700";
 }
 
+const emptyMoveForm = () => ({
+  商品PageId: "",
+  日付: new Date().toISOString().slice(0, 10),
+  移動数: 1,
+  移動元: "水上村",
+  移動先: "陸上部",
+  備考: "",
+});
+
 export default function InventoryPage() {
   const [items, setItems] = useState<Product[]>([]);
+  const [movements, setMovements] = useState<MovementRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [form, setForm] = useState<Partial<Product>>({});
+  const [editForm, setEditForm] = useState<Partial<Product>>({});
   const [saving, setSaving] = useState(false);
+  const [showMoveForm, setShowMoveForm] = useState(false);
+  const [moveForm, setMoveForm] = useState(emptyMoveForm());
+  const [moveSaving, setMoveSaving] = useState(false);
 
   useEffect(() => { fetchAll(); }, []);
 
   async function fetchAll() {
     setLoading(true);
-    const inv = await fetch("/api/inventory").then((r) => r.json());
+    const [inv, mv] = await Promise.all([
+      fetch("/api/inventory").then((r) => r.json()),
+      fetch("/api/movements").then((r) => r.json()),
+    ]);
     setItems(inv);
+    setMovements(mv);
     setLoading(false);
-  }
-
-  function startEdit(item: Product) {
-    setEditing(item);
-    setForm({ ...item });
   }
 
   async function saveEdit() {
@@ -42,7 +54,7 @@ export default function InventoryPage() {
     await fetch(`/api/inventory/${editing.pageId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(editForm),
     });
     setSaving(false);
     setEditing(null);
@@ -58,7 +70,23 @@ export default function InventoryPage() {
     fetchAll();
   }
 
+  async function saveMove() {
+    if (!moveForm.商品PageId) return;
+    setMoveSaving(true);
+    const prod = activeItems.find((p) => p.pageId === moveForm.商品PageId);
+    await fetch("/api/movements", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...moveForm, 商品名: prod?.品名 ?? "" }),
+    });
+    setMoveSaving(false);
+    setShowMoveForm(false);
+    setMoveForm(emptyMoveForm());
+    fetchAll();
+  }
+
   const activeItems = items.filter((i) => !i.アーカイブ);
+  const archivedItems = items.filter((i) => i.アーカイブ);
 
   const totalByLoc = LOCATIONS.reduce((acc, loc) => {
     acc[loc] = activeItems.reduce((s, r) => s + (r[loc] ?? 0), 0);
@@ -67,6 +95,7 @@ export default function InventoryPage() {
 
   return (
     <Shell>
+      {/* ── 在庫テーブル ── */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-slate-800">在庫</h1>
       </div>
@@ -75,8 +104,8 @@ export default function InventoryPage() {
         <p className="text-slate-500">読み込み中...</p>
       ) : (
         <>
-          {/* Desktop table */}
-          <div className="hidden lg:block bg-white rounded-xl shadow overflow-x-auto">
+          {/* Desktop */}
+          <div className="hidden lg:block bg-white rounded-xl shadow overflow-x-auto mb-8">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-slate-600 font-medium">
                 <tr>
@@ -97,25 +126,23 @@ export default function InventoryPage() {
                       {LOCATIONS.map((loc) => {
                         const n = item[loc] ?? 0;
                         return (
-                          <td key={loc} className={`px-3 py-3 text-center ${stockColor(n)}`}>
-                            {n}
-                          </td>
+                          <td key={loc} className={`px-3 py-3 text-center ${stockColor(n)}`}>{n}</td>
                         );
                       })}
                       <td className="px-3 py-3 text-center font-bold text-slate-700">{total}</td>
                       <td className="px-3 py-3 text-right space-x-2">
-                        <button onClick={() => startEdit(item)} className="text-xs text-blue-500 hover:underline">編集</button>
+                        <button onClick={() => { setEditing(item); setEditForm({ ...item }); }} className="text-xs text-blue-500 hover:underline">編集</button>
                         <button onClick={() => toggleArchive(item)} className="text-xs text-slate-400 hover:underline">アーカイブ</button>
                       </td>
                     </tr>
                   );
                 })}
-                {items.filter((i) => i.アーカイブ).length > 0 && (
+                {archivedItems.length > 0 && (
                   <>
                     <tr>
                       <td colSpan={8} className="px-4 py-2 text-xs text-slate-400 bg-slate-50 font-medium">アーカイブ済み</td>
                     </tr>
-                    {items.filter((i) => i.アーカイブ).map((item) => {
+                    {archivedItems.map((item) => {
                       const total = LOCATIONS.reduce((s, loc) => s + (item[loc] ?? 0), 0);
                       return (
                         <tr key={item.pageId} className="opacity-40">
@@ -137,17 +164,15 @@ export default function InventoryPage() {
                   {LOCATIONS.map((loc) => (
                     <td key={loc} className="px-3 py-3 text-center">{totalByLoc[loc]}</td>
                   ))}
-                  <td className="px-3 py-3 text-center">
-                    {LOCATIONS.reduce((s, loc) => s + totalByLoc[loc], 0)}
-                  </td>
+                  <td className="px-3 py-3 text-center">{LOCATIONS.reduce((s, loc) => s + totalByLoc[loc], 0)}</td>
                   <td />
                 </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Mobile cards */}
-          <div className="lg:hidden space-y-3">
+          {/* Mobile */}
+          <div className="lg:hidden space-y-3 mb-8">
             {activeItems.map((item) => {
               const total = LOCATIONS.reduce((s, loc) => s + (item[loc] ?? 0), 0);
               return (
@@ -155,7 +180,7 @@ export default function InventoryPage() {
                   <div className="flex items-start justify-between mb-3">
                     <p className="font-semibold text-slate-800 text-sm">{item.品名}</p>
                     <div className="space-x-2 shrink-0 ml-2">
-                      <button onClick={() => startEdit(item)} className="text-xs text-blue-500 hover:underline">編集</button>
+                      <button onClick={() => { setEditing(item); setEditForm({ ...item }); }} className="text-xs text-blue-500 hover:underline">編集</button>
                       <button onClick={() => toggleArchive(item)} className="text-xs text-slate-400 hover:underline">アーカイブ</button>
                     </div>
                   </div>
@@ -178,9 +203,71 @@ export default function InventoryPage() {
               );
             })}
           </div>
+
+          {/* ── 在庫移動 ── */}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-slate-800">在庫移動履歴</h2>
+            <button
+              onClick={() => setShowMoveForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition"
+            >
+              ＋ 移動を記録
+            </button>
+          </div>
+
+          {/* Desktop movements table */}
+          <div className="hidden lg:block bg-white rounded-xl shadow overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-600 font-medium">
+                <tr>
+                  <th className="text-left px-4 py-3">日付</th>
+                  <th className="text-left px-4 py-3">商品</th>
+                  <th className="text-center px-3 py-3">移動数</th>
+                  <th className="text-left px-3 py-3">移動元</th>
+                  <th className="text-left px-3 py-3">移動先</th>
+                  <th className="text-left px-3 py-3">備考</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {movements.length === 0 ? (
+                  <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-400 text-sm">記録がありません</td></tr>
+                ) : movements.slice(0, 30).map((m) => (
+                  <tr key={m.pageId} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-slate-500">{m.日付}</td>
+                    <td className="px-4 py-3 text-slate-800">{m.商品名}</td>
+                    <td className="px-3 py-3 text-center font-semibold text-slate-700">{m.移動数}</td>
+                    <td className="px-3 py-3"><span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs">{m.移動元}</span></td>
+                    <td className="px-3 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">{m.移動先}</span></td>
+                    <td className="px-3 py-3 text-slate-500">{m.備考}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile movements */}
+          <div className="lg:hidden space-y-2">
+            {movements.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-4">記録がありません</p>
+            ) : movements.slice(0, 30).map((m) => (
+              <div key={m.pageId} className="bg-white rounded-xl border border-slate-100 p-3 text-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-slate-800">{m.商品名}</span>
+                  <span className="text-slate-400 text-xs">{m.日付}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{m.移動元}</span>
+                  <span className="text-slate-400">→</span>
+                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{m.移動先}</span>
+                  <span className="text-slate-600 font-semibold ml-auto">{m.移動数}個</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </>
       )}
 
+      {/* 在庫数編集モーダル */}
       {editing && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -194,10 +281,9 @@ export default function InventoryPage() {
                 <div key={loc}>
                   <label className="block text-xs text-slate-500 mb-1">{loc}</label>
                   <input
-                    type="number"
-                    min={0}
-                    value={form[loc] ?? 0}
-                    onChange={(e) => setForm({ ...form, [loc]: Number(e.target.value) })}
+                    type="number" min={0}
+                    value={editForm[loc] ?? 0}
+                    onChange={(e) => setEditForm({ ...editForm, [loc]: Number(e.target.value) })}
                     className="w-full border rounded-lg px-3 py-2"
                   />
                 </div>
@@ -206,23 +292,96 @@ export default function InventoryPage() {
                 <label className="block text-xs text-slate-500 mb-1">備考</label>
                 <input
                   type="text"
-                  value={form.備考 ?? ""}
-                  onChange={(e) => setForm({ ...form, 備考: e.target.value })}
+                  value={editForm.備考 ?? ""}
+                  onChange={(e) => setEditForm({ ...editForm, 備考: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2"
                 />
               </div>
-              <button
-                onClick={saveEdit}
-                disabled={saving}
-                className="w-full bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50"
-              >
+              <button onClick={saveEdit} disabled={saving} className="w-full bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50">
                 {saving ? "保存中..." : "保存"}
               </button>
-              <button
-                onClick={() => { toggleArchive(editing!); setEditing(null); }}
-                className="w-full border border-slate-200 text-slate-500 py-2 rounded-lg text-sm hover:bg-slate-50"
-              >
+              <button onClick={() => { toggleArchive(editing!); setEditing(null); }} className="w-full border border-slate-200 text-slate-500 py-2 rounded-lg text-sm hover:bg-slate-50">
                 アーカイブする
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 移動記録モーダル */}
+      {showMoveForm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-lg">在庫移動を記録</h2>
+              <button onClick={() => setShowMoveForm(false)} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">日付</label>
+                <input
+                  type="date" value={moveForm.日付}
+                  onChange={(e) => setMoveForm({ ...moveForm, 日付: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">商品 *</label>
+                <select
+                  value={moveForm.商品PageId}
+                  onChange={(e) => setMoveForm({ ...moveForm, 商品PageId: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">選択してください</option>
+                  {activeItems.map((p) => (
+                    <option key={p.pageId} value={p.pageId}>{p.品名}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">移動数</label>
+                <input
+                  type="number" min={1} value={moveForm.移動数}
+                  onChange={(e) => setMoveForm({ ...moveForm, 移動数: Number(e.target.value) })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">移動元</label>
+                  <select
+                    value={moveForm.移動元}
+                    onChange={(e) => setMoveForm({ ...moveForm, 移動元: e.target.value })}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                  >
+                    {LOCATIONS.map((l) => <option key={l}>{l}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">移動先</label>
+                  <select
+                    value={moveForm.移動先}
+                    onChange={(e) => setMoveForm({ ...moveForm, 移動先: e.target.value })}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                  >
+                    {LOCATIONS.map((l) => <option key={l}>{l}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">備考</label>
+                <input
+                  type="text" value={moveForm.備考}
+                  onChange={(e) => setMoveForm({ ...moveForm, 備考: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <button
+                onClick={saveMove}
+                disabled={moveSaving || !moveForm.商品PageId}
+                className="w-full bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50"
+              >
+                {moveSaving ? "保存中..." : "記録する"}
               </button>
             </div>
           </div>
