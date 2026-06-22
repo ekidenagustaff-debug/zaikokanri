@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseSale } from "@/lib/notion";
+import { createProductIfNotExists } from "@/lib/product-sync";
+import { decreaseInventory } from "@/lib/inventory-sync";
 
 export type ImportRow = {
   orderNumber: string;
@@ -14,17 +16,26 @@ export type ImportRow = {
 };
 
 async function getImportedOrderNumbers(): Promise<Set<string>> {
-  const res = await notion.dataSources.query({
-    data_source_id: DS.sales,
-    page_size: 100,
-  });
   const imported = new Set<string>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  res.results.filter((r: any) => r.properties).forEach((r: any) => {
-    const sale = parseSale(r);
-    const match = sale.備考.match(/\[Wix#(\d+)\]/);
-    if (match) imported.add(match[1]);
-  });
+  let cursor: string | undefined;
+
+  do {
+    const res = await notion.dataSources.query({
+      data_source_id: DS.sales,
+      page_size: 100,
+      ...(cursor ? { start_cursor: cursor } : {}),
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    res.results
+      .filter((r: any) => r.properties)
+      .forEach((r: any) => {
+        const sale = parseSale(r);
+        const match = sale.備考.match(/\[Wix#(\d+)\]/);
+        if (match) imported.add(match[1]);
+      });
+    cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
+  } while (cursor);
+
   return imported;
 }
 
@@ -46,10 +57,14 @@ export async function POST(req: NextRequest) {
       .filter(Boolean)
       .join(" ");
 
+    // 商品マスタに自動登録（存在しない場合）
+    const 商品PageId = await createProductIfNotExists(商品名);
+
     await notion.pages.create({
       parent: { data_source_id: DS.sales, type: "data_source_id" },
       properties: {
         商品名: { title: [{ text: { content: 商品名 } }] },
+        商品: { relation: [{ id: 商品PageId }] },
         日付: { date: { start: row.orderDate } },
         販売数: { number: row.quantity },
         価格種別: { select: { name: "通常価格" } },
@@ -58,6 +73,9 @@ export async function POST(req: NextRequest) {
         備考: { rich_text: [{ text: { content: `[Wix#${row.orderNumber}] ${row.customerName}` } }] },
       } as Parameters<typeof notion.pages.create>[0]["properties"],
     });
+
+    // 在庫自動減算
+    await decreaseInventory(商品PageId, "オンライン", row.quantity);
 
     imported.add(row.orderNumber);
     added++;
