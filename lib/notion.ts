@@ -29,6 +29,7 @@ export type Product = {
   陸上部: number | null;
   購買会: number | null;
   オンライン: number | null;
+  アーカイブ: boolean;
 };
 
 export type SaleRecord = {
@@ -105,6 +106,7 @@ export function parseProduct(page: any): Product {
     陸上部: getNumber(props["陸上部"]),
     購買会: getNumber(props["購買会"]),
     オンライン: getNumber(props["オンライン"]),
+    アーカイブ: (props["アーカイブ"] as { checkbox?: boolean } | undefined)?.checkbox ?? false,
   };
 }
 

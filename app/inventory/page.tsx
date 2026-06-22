@@ -6,6 +6,15 @@ import type { Product } from "@/lib/notion";
 const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会", "オンライン"] as const;
 type Location = (typeof LOCATIONS)[number];
 
+function stockColor(n: number): string {
+  if (n <= 0) return "text-red-600 font-bold";
+  if (n <= 5) return "text-red-500 font-semibold";
+  if (n <= 10) return "text-orange-500 font-semibold";
+  if (n <= 20) return "text-amber-500";
+  if (n <= 30) return "text-yellow-600";
+  return "text-slate-700";
+}
+
 export default function InventoryPage() {
   const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,8 +49,10 @@ export default function InventoryPage() {
     fetchAll();
   }
 
+  const activeItems = items.filter((i) => !i.アーカイブ);
+
   const totalByLoc = LOCATIONS.reduce((acc, loc) => {
-    acc[loc] = items.reduce((s, r) => s + (r[loc] ?? 0), 0);
+    acc[loc] = activeItems.reduce((s, r) => s + (r[loc] ?? 0), 0);
     return acc;
   }, {} as Record<Location, number>);
 
@@ -69,16 +80,19 @@ export default function InventoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {items.map((item) => {
+                {activeItems.map((item) => {
                   const total = LOCATIONS.reduce((s, loc) => s + (item[loc] ?? 0), 0);
                   return (
                     <tr key={item.pageId} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-800">{item.品名}</td>
-                      {LOCATIONS.map((loc) => (
-                        <td key={loc} className="px-3 py-3 text-center text-slate-700">
-                          {item[loc] ?? 0}
-                        </td>
-                      ))}
+                      {LOCATIONS.map((loc) => {
+                        const n = item[loc] ?? 0;
+                        return (
+                          <td key={loc} className={`px-3 py-3 text-center ${stockColor(n)}`}>
+                            {n}
+                          </td>
+                        );
+                      })}
                       <td className="px-3 py-3 text-center font-bold text-slate-700">{total}</td>
                       <td className="px-3 py-3 text-right">
                         <button onClick={() => startEdit(item)} className="text-xs text-blue-500 hover:underline">
@@ -104,7 +118,7 @@ export default function InventoryPage() {
 
           {/* Mobile cards */}
           <div className="lg:hidden space-y-3">
-            {items.map((item) => {
+            {activeItems.map((item) => {
               const total = LOCATIONS.reduce((s, loc) => s + (item[loc] ?? 0), 0);
               return (
                 <div key={item.pageId} className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
@@ -113,12 +127,15 @@ export default function InventoryPage() {
                     <button onClick={() => startEdit(item)} className="text-xs text-blue-500 hover:underline ml-2 shrink-0">編集</button>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    {LOCATIONS.map((loc) => (
-                      <div key={loc} className="text-center">
-                        <p className="text-xs text-slate-400">{loc}</p>
-                        <p className="font-bold text-slate-700">{item[loc] ?? 0}</p>
-                      </div>
-                    ))}
+                    {LOCATIONS.map((loc) => {
+                      const n = item[loc] ?? 0;
+                      return (
+                        <div key={loc} className="text-center">
+                          <p className="text-xs text-slate-400">{loc}</p>
+                          <p className={`font-bold ${stockColor(n)}`}>{n}</p>
+                        </div>
+                      );
+                    })}
                     <div className="text-center">
                       <p className="text-xs text-slate-400">合計</p>
                       <p className="font-bold text-slate-800">{total}</p>

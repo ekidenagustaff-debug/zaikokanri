@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseProduct } from "@/lib/notion";
 
 export async function GET() {
-  const res = await notion.dataSources.query({
-    data_source_id: DS.products,
-    sorts: [{ property: "品名", direction: "ascending" }],
-  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return NextResponse.json(res.results.filter((r: any) => r.properties).map(parseProduct));
+  const all: any[] = [];
+  let cursor: string | undefined;
+  do {
+    const res = await notion.dataSources.query({
+      data_source_id: DS.products,
+      sorts: [{ property: "品名", direction: "ascending" }],
+      page_size: 100,
+      ...(cursor ? { start_cursor: cursor } : {}),
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    all.push(...res.results.filter((r: any) => r.properties));
+    cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
+  } while (cursor);
+  return NextResponse.json(all.map(parseProduct));
 }
 
 export async function POST(req: NextRequest) {
@@ -16,8 +25,6 @@ export async function POST(req: NextRequest) {
     parent: { data_source_id: DS.products, type: "data_source_id" },
     properties: {
       品名: { title: [{ text: { content: body.品名 ?? "" } }] },
-      サイズ: { rich_text: [{ text: { content: body.サイズ ?? "" } }] },
-      カラー: body.カラー ? { select: { name: body.カラー } } : { select: null },
       仕入れ数: { number: body.仕入れ数 ?? null },
       通常価格: { number: body.通常価格 ?? null },
       関係者価格: { number: body.関係者価格 ?? null },
@@ -26,6 +33,11 @@ export async function POST(req: NextRequest) {
       原価: { number: body.原価 ?? null },
       仕入れ額: { number: body.仕入れ額 ?? null },
       備考: { rich_text: [{ text: { content: body.備考 ?? "" } }] },
+      水上村: { number: 0 },
+      町田寮: { number: 0 },
+      陸上部: { number: 0 },
+      購買会: { number: 0 },
+      オンライン: { number: 0 },
     },
   });
   return NextResponse.json(parseProduct(page));

@@ -8,8 +8,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     page_id: id,
     properties: {
       品名: { title: [{ text: { content: body.品名 ?? "" } }] },
-      サイズ: { rich_text: [{ text: { content: body.サイズ ?? "" } }] },
-      カラー: body.カラー ? { select: { name: body.カラー } } : { select: null },
       仕入れ数: { number: body.仕入れ数 ?? null },
       通常価格: { number: body.通常価格 ?? null },
       関係者価格: { number: body.関係者価格 ?? null },
@@ -18,6 +16,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       原価: { number: body.原価 ?? null },
       仕入れ額: { number: body.仕入れ額 ?? null },
       備考: { rich_text: [{ text: { content: body.備考 ?? "" } }] },
+      アーカイブ: { checkbox: body.アーカイブ ?? false },
     },
   });
   return NextResponse.json(parseProduct(page));
