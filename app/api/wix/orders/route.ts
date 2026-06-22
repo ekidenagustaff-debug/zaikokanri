@@ -10,6 +10,7 @@ export type WixOrderRow = {
   quantity: number;
   price: number;
   paymentStatus: string;
+  isShipping?: boolean;
 };
 
 export async function GET(req: NextRequest) {
@@ -90,17 +91,20 @@ export async function GET(req: NextRequest) {
       }
 
       const shipping = order.totals?.shipping ? Number(order.totals.shipping) : 0;
-      allResults.push({
-        orderNumber,
-        orderDate,
-        customerName: customerName.trim(),
-        itemName: "送料",
-        size: "",
-        color: "",
-        quantity: 1,
-        price: shipping,
-        paymentStatus: order.paymentStatus,
-      });
+      if (shipping > 0) {
+        allResults.push({
+          orderNumber,
+          orderDate,
+          customerName: customerName.trim(),
+          itemName: "送料",
+          size: "",
+          color: "",
+          quantity: 1,
+          price: shipping,
+          paymentStatus: order.paymentStatus,
+          isShipping: true,
+        });
+      }
     });
 
     if (orders.length < limit) break;

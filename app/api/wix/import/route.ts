@@ -13,6 +13,7 @@ export type ImportRow = {
   quantity: number;
   price: number;
   paymentStatus: string;
+  isShipping?: boolean;
 };
 
 async function getImportedOrderNumbers(): Promise<Set<string>> {
@@ -53,29 +54,45 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const 商品名 = [row.itemName, row.size, row.color ? `(${row.color})` : ""]
-      .filter(Boolean)
-      .join(" ");
+    const 商品名 = row.isShipping
+      ? "送料"
+      : [row.itemName, row.size, row.color ? `(${row.color})` : ""].filter(Boolean).join(" ");
 
-    // 商品マスタに自動登録（存在しない場合）
-    const 商品PageId = await createProductIfNotExists(商品名);
+    if (row.isShipping) {
+      // 送料は販売記録のみ登録（商品マスタ・在庫操作なし）
+      await notion.pages.create({
+        parent: { data_source_id: DS.sales, type: "data_source_id" },
+        properties: {
+          商品名: { title: [{ text: { content: "送料" } }] },
+          日付: { date: { start: row.orderDate } },
+          販売数: { number: 1 },
+          価格種別: { select: { name: "通常価格" } },
+          販売拠点: { select: { name: "水上村" } },
+          販売額: { number: row.price },
+          備考: { rich_text: [{ text: { content: `[Wix#${row.orderNumber}] ${row.customerName}` } }] },
+        } as Parameters<typeof notion.pages.create>[0]["properties"],
+      });
+    } else {
+      // 商品マスタに自動登録（存在しない場合）
+      const 商品PageId = await createProductIfNotExists(商品名);
 
-    await notion.pages.create({
-      parent: { data_source_id: DS.sales, type: "data_source_id" },
-      properties: {
-        商品名: { title: [{ text: { content: 商品名 } }] },
-        商品: { relation: [{ id: 商品PageId }] },
-        日付: { date: { start: row.orderDate } },
-        販売数: { number: row.quantity },
-        価格種別: { select: { name: "通常価格" } },
-        販売拠点: { select: { name: "オンライン" } },
-        販売額: { number: row.price * row.quantity },
-        備考: { rich_text: [{ text: { content: `[Wix#${row.orderNumber}] ${row.customerName}` } }] },
-      } as Parameters<typeof notion.pages.create>[0]["properties"],
-    });
+      await notion.pages.create({
+        parent: { data_source_id: DS.sales, type: "data_source_id" },
+        properties: {
+          商品名: { title: [{ text: { content: 商品名 } }] },
+          商品: { relation: [{ id: 商品PageId }] },
+          日付: { date: { start: row.orderDate } },
+          販売数: { number: row.quantity },
+          価格種別: { select: { name: "通常価格" } },
+          販売拠点: { select: { name: "水上村" } },
+          販売額: { number: row.price * row.quantity },
+          備考: { rich_text: [{ text: { content: `[Wix#${row.orderNumber}] ${row.customerName}` } }] },
+        } as Parameters<typeof notion.pages.create>[0]["properties"],
+      });
 
-    // 在庫自動減算
-    await decreaseInventory(商品PageId, "オンライン", row.quantity);
+      // 在庫自動減算（水上村）
+      await decreaseInventory(商品PageId, "水上村", row.quantity);
+    }
 
     imported.add(row.orderNumber);
     added++;

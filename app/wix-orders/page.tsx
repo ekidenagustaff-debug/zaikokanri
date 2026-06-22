@@ -53,7 +53,9 @@ export default function WixOrdersPage() {
     setImporting(false);
   }
 
-  const total = orders.reduce((s, r) => s + r.price * r.quantity, 0);
+  const productTotal = orders.filter((r) => !r.isShipping).reduce((s, r) => s + r.price * r.quantity, 0);
+  const shippingTotal = orders.filter((r) => r.isShipping).reduce((s, r) => s + r.price, 0);
+  const total = productTotal + shippingTotal;
 
   return (
     <Shell>
@@ -82,7 +84,7 @@ export default function WixOrdersPage() {
         )}
         {fetched && (
           <div className="ml-auto text-right">
-            <p className="text-xs text-slate-400">{orders.length} 行</p>
+            <p className="text-xs text-slate-400">{orders.filter((r) => !r.isShipping).length} 件（送料 ¥{shippingTotal.toLocaleString()}）</p>
             <p className="font-bold text-slate-800">合計 ¥{total.toLocaleString()}</p>
           </div>
         )}
@@ -108,14 +110,16 @@ export default function WixOrdersPage() {
             { key: "subtotal", label: "小計", className: "text-right" },
             { key: "paymentStatus", label: "支払状況" },
           ]}
-          rows={orders.map((row, i) => ({
+          rows={orders.map((row) => ({
             orderNumber: <span className="font-mono text-xs text-slate-400">{row.orderNumber}</span>,
             date: <span className="text-xs text-slate-400">{row.orderDate}</span>,
             customerName: row.customerName,
-            itemName: row.itemName,
+            itemName: row.isShipping
+              ? <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">送料</span>
+              : row.itemName,
             size: row.size || "-",
             color: row.color || "-",
-            quantity: row.quantity,
+            quantity: row.isShipping ? "-" : row.quantity,
             price: `¥${row.price.toLocaleString()}`,
             subtotal: `¥${(row.price * row.quantity).toLocaleString()}`,
             paymentStatus: (
