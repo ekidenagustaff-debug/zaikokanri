@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
+import ResponsiveTable from "@/components/ResponsiveTable";
 import type { MovementRecord, Product } from "@/lib/notion";
 
 const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"];
@@ -65,38 +66,28 @@ export default function MovementsPage() {
         {loading ? (
           <p className="text-gray-500">読み込み中...</p>
         ) : (
-          <div className="bg-white rounded-xl shadow overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 font-medium">
-                <tr>
-                  <th className="text-left px-4 py-3">日付</th>
-                  <th className="text-left px-4 py-3">商品</th>
-                  <th className="text-center px-3 py-3">移動数</th>
-                  <th className="text-left px-3 py-3">移動元</th>
-                  <th className="px-3 py-3"></th>
-                  <th className="text-left px-3 py-3">移動先</th>
-                  <th className="text-left px-3 py-3">備考</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {movements.map((m) => (
-                  <tr key={m.pageId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-600">{m.日付}</td>
-                    <td className="px-4 py-3 font-medium">{m.商品名}</td>
-                    <td className="px-3 py-3 text-center font-bold">{m.移動数}</td>
-                    <td className="px-3 py-3">
-                      <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">{m.移動元}</span>
-                    </td>
-                    <td className="px-1 py-3 text-gray-400 text-center">→</td>
-                    <td className="px-3 py-3">
-                      <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">{m.移動先}</span>
-                    </td>
-                    <td className="px-3 py-3 text-gray-500">{m.備考}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveTable
+            columns={[
+              { key: "date", label: "日付" },
+              { key: "product", label: "商品" },
+              { key: "qty", label: "移動数", className: "text-center" },
+              { key: "from", label: "移動元" },
+              { key: "to", label: "移動先" },
+              { key: "notes", label: "備考" },
+            ]}
+            rows={movements.map((m) => ({
+              date: m.日付,
+              product: m.商品名,
+              qty: m.移動数,
+              from: (
+                <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">{m.移動元}</span>
+              ),
+              to: (
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">{m.移動先}</span>
+              ),
+              notes: m.備考,
+            }))}
+          />
         )}
 
         {showForm && (

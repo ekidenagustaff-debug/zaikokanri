@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
+import ResponsiveTable from "@/components/ResponsiveTable";
 import type { Product, SaleRecord, InventoryItem } from "@/lib/notion";
 
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) {
@@ -99,41 +100,24 @@ export default function DashboardPage() {
             <StatCard label="商品種類" value={`${products.length} 種`} color="amber" />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-semibold text-slate-700">最近の販売</h2>
-              <a href="/sales" className="text-xs text-blue-500 hover:underline">すべて見る →</a>
-            </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-xs text-slate-400 border-b border-slate-100">
-                  <th className="text-left px-5 py-3 font-medium">日付</th>
-                  <th className="text-left px-4 py-3 font-medium">商品</th>
-                  <th className="text-left px-4 py-3 font-medium">拠点</th>
-                  <th className="text-center px-4 py-3 font-medium">数量</th>
-                  <th className="text-right px-5 py-3 font-medium">販売額</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.slice(0, 8).map((s) => (
-                  <tr key={s.pageId} className="border-b border-slate-50 hover:bg-slate-50 transition">
-                    <td className="px-5 py-3 text-slate-400 text-xs">{s.日付}</td>
-                    <td className="px-4 py-3 font-medium text-slate-700">{s.商品名}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{s.販売拠点}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center text-slate-600">{s.販売数}</td>
-                    <td className="px-5 py-3 text-right font-semibold text-slate-800">
-                      {s.販売額 != null ? `¥${s.販売額.toLocaleString()}` : "-"}
-                    </td>
-                  </tr>
-                ))}
-                {sales.length === 0 && (
-                  <tr><td colSpan={5} className="px-5 py-8 text-center text-slate-300 text-sm">販売記録がありません</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveTable
+            title="最近の販売"
+            link={{ label: "すべて見る", href: "/sales" }}
+            columns={[
+              { key: "date", label: "日付" },
+              { key: "product", label: "商品" },
+              { key: "location", label: "拠点" },
+              { key: "qty", label: "数量" },
+              { key: "amount", label: "販売額", className: "text-right" },
+            ]}
+            rows={sales.slice(0, 8).map((s) => ({
+              date: s.日付,
+              product: s.商品名,
+              location: <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{s.販売拠点}</span>,
+              qty: s.販売数,
+              amount: s.販売額 != null ? `¥${s.販売額.toLocaleString()}` : "-",
+            }))}
+          />
         </>
       )}
 

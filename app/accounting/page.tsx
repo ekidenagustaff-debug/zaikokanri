@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
+import ResponsiveTable from "@/components/ResponsiveTable";
 import type { SaleRecord, Product } from "@/lib/notion";
 
 export default function AccountingPage() {
@@ -75,34 +76,26 @@ export default function AccountingPage() {
             </div>
 
             {/* Per product */}
-            <div className="bg-white rounded-xl shadow overflow-hidden">
-              <div className="px-4 py-3 border-b">
-                <h2 className="font-bold text-gray-700">商品別売上内訳</h2>
-              </div>
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600 font-medium">
-                  <tr>
-                    <th className="text-left px-4 py-3">商品名</th>
-                    <th className="text-right px-3 py-3">通常価格</th>
-                    <th className="text-right px-3 py-3">関係者割引</th>
-                    <th className="text-right px-3 py-3">陸上部卸値</th>
-                    <th className="text-right px-3 py-3">購買会卸値</th>
-                    <th className="text-right px-4 py-3 font-bold">合計</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {Object.entries(byProduct).map(([name, data]) => (
-                    <tr key={name} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium">{name}</td>
-                      <td className="px-3 py-3 text-right text-gray-600">¥{data.通常.toLocaleString()}</td>
-                      <td className="px-3 py-3 text-right text-gray-600">¥{data.関係者.toLocaleString()}</td>
-                      <td className="px-3 py-3 text-right text-gray-600">¥{data.陸上部.toLocaleString()}</td>
-                      <td className="px-3 py-3 text-right text-gray-600">¥{data.購買会.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right font-bold">¥{data.合計.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              <ResponsiveTable
+                title="商品別売上内訳"
+                columns={[
+                  { key: "name", label: "商品名" },
+                  { key: "normal", label: "通常価格", className: "text-right" },
+                  { key: "member", label: "関係者割引", className: "text-right" },
+                  { key: "wholesale1", label: "陸上部卸値", className: "text-right" },
+                  { key: "wholesale2", label: "購買会卸値", className: "text-right" },
+                  { key: "total", label: "合計", className: "text-right" },
+                ]}
+                rows={Object.entries(byProduct).map(([name, data]) => ({
+                  name: name,
+                  normal: `¥${data.通常.toLocaleString()}`,
+                  member: `¥${data.関係者.toLocaleString()}`,
+                  wholesale1: `¥${data.陸上部.toLocaleString()}`,
+                  wholesale2: `¥${data.購買会.toLocaleString()}`,
+                  total: `¥${data.合計.toLocaleString()}`,
+                }))}
+              />
             </div>
           </>
         )}

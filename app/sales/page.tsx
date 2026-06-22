@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
+import ResponsiveTable from "@/components/ResponsiveTable";
 import type { Product, SaleRecord } from "@/lib/notion";
 
 const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"];
@@ -78,43 +79,33 @@ export default function SalesPage() {
         {loading ? (
           <p className="text-gray-500">読み込み中...</p>
         ) : (
-          <div className="bg-white rounded-xl shadow overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 font-medium">
-                <tr>
-                  <th className="text-left px-4 py-3">日付</th>
-                  <th className="text-left px-4 py-3">商品</th>
-                  <th className="text-center px-3 py-3">販売数</th>
-                  <th className="text-left px-3 py-3">価格種別</th>
-                  <th className="text-left px-3 py-3">拠点</th>
-                  <th className="text-right px-3 py-3">販売額</th>
-                  <th className="text-left px-3 py-3">備考</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {sales.map((s) => (
-                  <tr key={s.pageId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-600">{s.日付}</td>
-                    <td className="px-4 py-3 font-medium">{s.商品名}</td>
-                    <td className="px-3 py-3 text-center">{s.販売数}</td>
-                    <td className="px-3 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${
-                        s.価格種別 === "通常価格" ? "bg-green-100 text-green-700" :
-                        s.価格種別 === "関係者割引" ? "bg-blue-100 text-blue-700" :
-                        s.価格種別 === "陸上部卸値" ? "bg-orange-100 text-orange-700" :
-                        "bg-purple-100 text-purple-700"
-                      }`}>{s.価格種別}</span>
-                    </td>
-                    <td className="px-3 py-3 text-gray-600">{s.販売拠点}</td>
-                    <td className="px-3 py-3 text-right font-medium">
-                      {s.販売額 != null ? `¥${s.販売額.toLocaleString()}` : "-"}
-                    </td>
-                    <td className="px-3 py-3 text-gray-500">{s.備考}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveTable
+            columns={[
+              { key: "date", label: "日付" },
+              { key: "product", label: "商品" },
+              { key: "qty", label: "販売数", className: "text-center" },
+              { key: "priceType", label: "価格種別" },
+              { key: "location", label: "拠点" },
+              { key: "amount", label: "販売額", className: "text-right" },
+              { key: "notes", label: "備考" },
+            ]}
+            rows={sales.map((s) => ({
+              date: s.日付,
+              product: s.商品名,
+              qty: s.販売数,
+              priceType: (
+                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  s.価格種別 === "通常価格" ? "bg-green-100 text-green-700" :
+                  s.価格種別 === "関係者割引" ? "bg-blue-100 text-blue-700" :
+                  s.価格種別 === "陸上部卸値" ? "bg-orange-100 text-orange-700" :
+                  "bg-purple-100 text-purple-700"
+                }`}>{s.価格種別}</span>
+              ),
+              location: s.販売拠点,
+              amount: s.販売額 != null ? `¥${s.販売額.toLocaleString()}` : "-",
+              notes: s.備考,
+            }))}
+          />
         )}
 
         {showForm && (

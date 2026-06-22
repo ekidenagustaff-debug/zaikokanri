@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
+import ResponsiveTable from "@/components/ResponsiveTable";
 import type { Product } from "@/lib/notion";
 
 const COLORS = ["クリーム", "グリーン", "ブラック", "その他"];
@@ -105,47 +106,41 @@ export default function ProductsPage() {
         {loading ? (
           <p className="text-gray-500">読み込み中...</p>
         ) : (
-          <div className="bg-white rounded-xl shadow overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 font-medium">
-                <tr>
-                  <th className="text-left px-4 py-3">品名</th>
-                  <th className="text-left px-3 py-3">サイズ</th>
-                  <th className="text-left px-3 py-3">カラー</th>
-                  <th className="text-right px-3 py-3">仕入れ数</th>
-                  <th className="text-right px-3 py-3">通常価格</th>
-                  <th className="text-right px-3 py-3">関係者価格</th>
-                  <th className="text-right px-3 py-3">原価</th>
-                  <th className="text-right px-3 py-3">仕入れ額</th>
-                  <th className="w-20" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {products.map((p) => (
-                  <tr key={p.pageId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{p.品名}</td>
-                    <td className="px-3 py-3 text-gray-600">{p.サイズ || "-"}</td>
-                    <td className="px-3 py-3 text-gray-600">{p.カラー || "-"}</td>
-                    <td className="px-3 py-3 text-right">{p.仕入れ数?.toLocaleString() ?? "-"}</td>
-                    <td className="px-3 py-3 text-right">¥{p.通常価格?.toLocaleString() ?? "-"}</td>
-                    <td className="px-3 py-3 text-right">¥{p.関係者価格?.toLocaleString() ?? "-"}</td>
-                    <td className="px-3 py-3 text-right">¥{p.原価?.toLocaleString() ?? "-"}</td>
-                    <td className="px-3 py-3 text-right">¥{p.仕入れ額?.toLocaleString() ?? "-"}</td>
-                    <td className="px-3 py-3 text-right space-x-2">
-                      <button onClick={() => openEdit(p)} className="text-blue-600 hover:underline text-xs">編集</button>
-                      <button
-                        onClick={() => deleteProduct(p.pageId)}
-                        disabled={deleting === p.pageId}
-                        className="text-red-400 hover:underline text-xs disabled:opacity-50"
-                      >
-                        削除
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ResponsiveTable
+            columns={[
+              { key: "name", label: "品名" },
+              { key: "size", label: "サイズ" },
+              { key: "color", label: "カラー" },
+              { key: "qty", label: "仕入れ数", className: "text-right" },
+              { key: "normalPrice", label: "通常価格", className: "text-right" },
+              { key: "memberPrice", label: "関係者価格", className: "text-right" },
+              { key: "cost", label: "原価", className: "text-right" },
+              { key: "purchaseAmount", label: "仕入れ額", className: "text-right" },
+              { key: "actions", label: "" },
+            ]}
+            rows={products.map((p) => ({
+              name: p.品名,
+              size: p.サイズ || "-",
+              color: p.カラー || "-",
+              qty: p.仕入れ数?.toLocaleString() ?? "-",
+              normalPrice: `¥${p.通常価格?.toLocaleString() ?? "-"}`,
+              memberPrice: `¥${p.関係者価格?.toLocaleString() ?? "-"}`,
+              cost: `¥${p.原価?.toLocaleString() ?? "-"}`,
+              purchaseAmount: `¥${p.仕入れ額?.toLocaleString() ?? "-"}`,
+              actions: (
+                <div className="space-x-2">
+                  <button onClick={() => openEdit(p)} className="text-blue-600 hover:underline text-xs">編集</button>
+                  <button
+                    onClick={() => deleteProduct(p.pageId)}
+                    disabled={deleting === p.pageId}
+                    className="text-red-400 hover:underline text-xs disabled:opacity-50"
+                  >
+                    削除
+                  </button>
+                </div>
+              ),
+            }))}
+          />
         )}
 
         {modal && (
