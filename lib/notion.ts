@@ -31,8 +31,11 @@ export type InventoryItem = {
   pageId: string;
   商品名: string;
   商品PageId: string | null;
-  拠点: string;
-  在庫数: number | null;
+  水上村: number | null;
+  町田寮: number | null;
+  陸上部: number | null;
+  購買会: number | null;
+  オンライン: number | null;
   備考: string;
 };
 
@@ -115,8 +118,11 @@ export function parseInventory(page: any): InventoryItem {
     pageId: page.id,
     商品名: getTitle(props["商品名"]),
     商品PageId: getRelationId(props["商品"]),
-    拠点: getSelect(props["拠点"]),
-    在庫数: getNumber(props["在庫数"]),
+    水上村: getNumber(props["水上村"]),
+    町田寮: getNumber(props["町田寮"]),
+    陸上部: getNumber(props["陸上部"]),
+    購買会: getNumber(props["購買会"]),
+    オンライン: getNumber(props["オンライン"]),
     備考: getRichText(props["備考"]),
   };
 }

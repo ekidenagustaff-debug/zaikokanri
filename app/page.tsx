@@ -45,7 +45,7 @@ export default function DashboardPage() {
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const monthlySales = sales.filter((s) => s.日付.startsWith(thisMonth));
   const monthlyRevenue = monthlySales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
-  const totalStock = inventory.reduce((s, r) => s + (r.在庫数 ?? 0), 0);
+  const totalStock = inventory.reduce((s, r) => s + (r.水上村 ?? 0) + (r.町田寮 ?? 0) + (r.陸上部 ?? 0) + (r.購買会 ?? 0) + (r.オンライン ?? 0), 0);
   const totalRevenue = sales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
 
   const selectedProduct = products.find((p) => p.pageId === qForm.商品PageId);
