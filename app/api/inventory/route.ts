@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseProduct } from "@/lib/notion";
 
-const LOCATION_COLS = ["水上村", "町田寮", "陸上部", "購買会", "オンライン"];
+const LOCATION_COLS = ["水上村", "町田寮", "陸上部", "購買会"];
 
 export async function GET() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

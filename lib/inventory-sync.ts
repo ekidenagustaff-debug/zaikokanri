@@ -1,6 +1,6 @@
 import { notion } from "./notion";
 
-const LOCATION_PROPS = ["水上村", "町田寮", "陸上部", "購買会", "オンライン"] as const;
+const LOCATION_PROPS = ["水上村", "町田寮", "陸上部", "購買会"] as const;
 type Location = (typeof LOCATION_PROPS)[number];
 
 async function getLocationValue(商品PageId: string, 拠点: Location): Promise<number> {

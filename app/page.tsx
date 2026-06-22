@@ -45,7 +45,11 @@ export default function DashboardPage() {
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const monthlySales = sales.filter((s) => s.日付.startsWith(thisMonth));
   const monthlyRevenue = monthlySales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
-  const totalStock = inventory.reduce((s, r) => s + (r.水上村 ?? 0) + (r.町田寮 ?? 0) + (r.陸上部 ?? 0) + (r.購買会 ?? 0) + (r.オンライン ?? 0), 0);
+  const totalStock = inventory.reduce((s, r) => s + (r.水上村 ?? 0) + (r.町田寮 ?? 0) + (r.陸上部 ?? 0) + (r.購買会 ?? 0), 0);
+  const locationTotals = LOCATIONS.map((loc) => ({
+    loc,
+    total: inventory.reduce((s, r) => s + ((r as Record<string, number | null>)[loc] ?? 0), 0),
+  }));
   const totalRevenue = sales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
 
   const selectedProduct = products.find((p) => p.pageId === qForm.商品PageId);
@@ -61,7 +65,7 @@ export default function DashboardPage() {
   async function quickSave() {
     if (!qForm.商品PageId || !selectedProduct) return;
     setSaving(true);
-    const 商品名 = [selectedProduct.品名, selectedProduct.サイズ, selectedProduct.カラー ? `(${selectedProduct.カラー})` : ""].filter(Boolean).join(" ");
+    const 商品名 = selectedProduct.品名;
     await fetch("/api/sales", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -98,6 +102,18 @@ export default function DashboardPage() {
             <StatCard label="累計売上" value={`¥${totalRevenue.toLocaleString()}`} sub={`全${sales.length}件`} color="violet" />
             <StatCard label="在庫総数" value={`${totalStock.toLocaleString()} 個`} sub={`${products.length}商品`} color="green" />
             <StatCard label="商品種類" value={`${products.length} 種`} color="amber" />
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">拠点別在庫数</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {locationTotals.map(({ loc, total }) => (
+                <div key={loc} className="text-center bg-slate-50 rounded-xl py-3 px-2">
+                  <p className="text-xs text-slate-500 mb-1">{loc}</p>
+                  <p className="text-xl font-bold text-slate-800">{total.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <ResponsiveTable
@@ -138,9 +154,7 @@ export default function DashboardPage() {
                 >
                   <option value="">選択してください</option>
                   {products.map((p) => (
-                    <option key={p.pageId} value={p.pageId}>
-                      {p.品名}{p.サイズ ? ` ${p.サイズ}` : ""}{p.カラー ? ` (${p.カラー})` : ""}
-                    </option>
+                    <option key={p.pageId} value={p.pageId}>{p.品名}</option>
                   ))}
                 </select>
               </div>

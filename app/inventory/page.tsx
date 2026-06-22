@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import type { Product, MovementRecord } from "@/lib/notion";
 
-const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会", "オンライン"] as const;
+const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"] as const;
 type Location = (typeof LOCATIONS)[number];
 
 function stockColor(n: number): string {
