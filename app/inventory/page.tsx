@@ -49,6 +49,15 @@ export default function InventoryPage() {
     fetchAll();
   }
 
+  async function toggleArchive(item: Product) {
+    await fetch(`/api/products/${item.pageId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...item, アーカイブ: !item.アーカイブ }),
+    });
+    fetchAll();
+  }
+
   const activeItems = items.filter((i) => !i.アーカイブ);
 
   const totalByLoc = LOCATIONS.reduce((acc, loc) => {
@@ -76,7 +85,7 @@ export default function InventoryPage() {
                     <th key={l} className="text-center px-3 py-3 w-24">{l}</th>
                   ))}
                   <th className="text-center px-3 py-3 w-16">合計</th>
-                  <th className="w-16" />
+                  <th className="w-28" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -94,14 +103,35 @@ export default function InventoryPage() {
                         );
                       })}
                       <td className="px-3 py-3 text-center font-bold text-slate-700">{total}</td>
-                      <td className="px-3 py-3 text-right">
-                        <button onClick={() => startEdit(item)} className="text-xs text-blue-500 hover:underline">
-                          編集
-                        </button>
+                      <td className="px-3 py-3 text-right space-x-2">
+                        <button onClick={() => startEdit(item)} className="text-xs text-blue-500 hover:underline">編集</button>
+                        <button onClick={() => toggleArchive(item)} className="text-xs text-slate-400 hover:underline">アーカイブ</button>
                       </td>
                     </tr>
                   );
                 })}
+                {items.filter((i) => i.アーカイブ).length > 0 && (
+                  <>
+                    <tr>
+                      <td colSpan={8} className="px-4 py-2 text-xs text-slate-400 bg-slate-50 font-medium">アーカイブ済み</td>
+                    </tr>
+                    {items.filter((i) => i.アーカイブ).map((item) => {
+                      const total = LOCATIONS.reduce((s, loc) => s + (item[loc] ?? 0), 0);
+                      return (
+                        <tr key={item.pageId} className="opacity-40">
+                          <td className="px-4 py-3 font-medium text-slate-800">{item.品名}</td>
+                          {LOCATIONS.map((loc) => (
+                            <td key={loc} className="px-3 py-3 text-center text-slate-500">{item[loc] ?? 0}</td>
+                          ))}
+                          <td className="px-3 py-3 text-center font-bold text-slate-700">{total}</td>
+                          <td className="px-3 py-3 text-right">
+                            <button onClick={() => toggleArchive(item)} className="text-xs text-slate-400 hover:underline">復元</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </>
+                )}
                 <tr className="bg-slate-50 font-semibold text-slate-600">
                   <td className="px-4 py-3">合計</td>
                   {LOCATIONS.map((loc) => (
@@ -124,7 +154,10 @@ export default function InventoryPage() {
                 <div key={item.pageId} className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
                   <div className="flex items-start justify-between mb-3">
                     <p className="font-semibold text-slate-800 text-sm">{item.品名}</p>
-                    <button onClick={() => startEdit(item)} className="text-xs text-blue-500 hover:underline ml-2 shrink-0">編集</button>
+                    <div className="space-x-2 shrink-0 ml-2">
+                      <button onClick={() => startEdit(item)} className="text-xs text-blue-500 hover:underline">編集</button>
+                      <button onClick={() => toggleArchive(item)} className="text-xs text-slate-400 hover:underline">アーカイブ</button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     {LOCATIONS.map((loc) => {
@@ -184,6 +217,12 @@ export default function InventoryPage() {
                 className="w-full bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50"
               >
                 {saving ? "保存中..." : "保存"}
+              </button>
+              <button
+                onClick={() => { toggleArchive(editing!); setEditing(null); }}
+                className="w-full border border-slate-200 text-slate-500 py-2 rounded-lg text-sm hover:bg-slate-50"
+              >
+                アーカイブする
               </button>
             </div>
           </div>
