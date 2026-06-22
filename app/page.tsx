@@ -48,7 +48,7 @@ export default function DashboardPage() {
   const totalStock = inventory.reduce((s, r) => s + (r.水上村 ?? 0) + (r.町田寮 ?? 0) + (r.陸上部 ?? 0) + (r.購買会 ?? 0), 0);
   const locationTotals = LOCATIONS.map((loc) => ({
     loc,
-    total: inventory.reduce((s, r) => s + ((r as Record<string, number | null>)[loc] ?? 0), 0),
+    total: inventory.reduce((s, r) => s + ((r as unknown as Record<string, number | null>)[loc] ?? 0), 0),
   }));
   const totalRevenue = sales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
 
