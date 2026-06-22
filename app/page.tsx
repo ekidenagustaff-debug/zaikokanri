@@ -104,15 +104,47 @@ export default function DashboardPage() {
             <StatCard label="商品種類" value={`${products.length} 種`} color="amber" />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">拠点別在庫数</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {locationTotals.map(({ loc, total }) => (
-                <div key={loc} className="text-center bg-slate-50 rounded-xl py-3 px-2">
-                  <p className="text-xs text-slate-500 mb-1">{loc}</p>
-                  <p className="text-xl font-bold text-slate-800">{total.toLocaleString()}</p>
-                </div>
-              ))}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-700">在庫一覧</p>
+              <div className="flex gap-4">
+                {locationTotals.map(({ loc, total }) => (
+                  <span key={loc} className="text-xs text-slate-500">{loc} <span className="font-bold text-slate-700">{total}</span></span>
+                ))}
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="text-left text-xs font-medium text-slate-400 px-5 py-2.5">商品名</th>
+                    {LOCATIONS.map((l) => (
+                      <th key={l} className="text-right text-xs font-medium text-slate-400 px-4 py-2.5">{l}</th>
+                    ))}
+                    <th className="text-right text-xs font-medium text-slate-400 px-5 py-2.5">合計</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {inventory.filter((p) => !p.アーカイブ).map((p) => {
+                    const row = p as unknown as Record<string, number | null>;
+                    const rowTotal = LOCATIONS.reduce((s, l) => s + (row[l] ?? 0), 0);
+                    return (
+                      <tr key={p.pageId} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-5 py-2.5 text-slate-700 font-medium">{p.品名}</td>
+                        {LOCATIONS.map((l) => {
+                          const v = row[l] ?? 0;
+                          return (
+                            <td key={l} className={`px-4 py-2.5 text-right tabular-nums ${v <= 0 ? "text-red-500 font-bold" : v <= 10 ? "text-orange-500" : "text-slate-600"}`}>
+                              {v}
+                            </td>
+                          );
+                        })}
+                        <td className="px-5 py-2.5 text-right tabular-nums font-semibold text-slate-700">{rowTotal}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
 
