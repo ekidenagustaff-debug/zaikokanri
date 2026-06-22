@@ -7,7 +7,6 @@ export const notion = new Client({
 // Data source IDs (collection IDs from Notion)
 export const DS = {
   products: process.env.NOTION_DB_PRODUCTS!,
-  inventory: process.env.NOTION_DB_INVENTORY!,
   sales: process.env.NOTION_DB_SALES!,
   movements: process.env.NOTION_DB_MOVEMENTS!,
 };
@@ -25,18 +24,11 @@ export type Product = {
   原価: number | null;
   仕入れ額: number | null;
   備考: string;
-};
-
-export type InventoryItem = {
-  pageId: string;
-  商品名: string;
-  商品PageId: string | null;
   水上村: number | null;
   町田寮: number | null;
   陸上部: number | null;
   購買会: number | null;
   オンライン: number | null;
-  備考: string;
 };
 
 export type SaleRecord = {
@@ -108,22 +100,11 @@ export function parseProduct(page: any): Product {
     原価: getNumber(props["原価"]),
     仕入れ額: getNumber(props["仕入れ額"]),
     備考: getRichText(props["備考"]),
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseInventory(page: any): InventoryItem {
-  const props = page.properties;
-  return {
-    pageId: page.id,
-    商品名: getTitle(props["商品名"]),
-    商品PageId: getRelationId(props["商品"]),
     水上村: getNumber(props["水上村"]),
     町田寮: getNumber(props["町田寮"]),
     陸上部: getNumber(props["陸上部"]),
     購買会: getNumber(props["購買会"]),
     オンライン: getNumber(props["オンライン"]),
-    備考: getRichText(props["備考"]),
   };
 }
 

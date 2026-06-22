@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import ResponsiveTable from "@/components/ResponsiveTable";
-import type { Product, SaleRecord, InventoryItem } from "@/lib/notion";
+import type { Product, SaleRecord } from "@/lib/notion";
 
 function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) {
   const colors: Record<string, string> = {
@@ -26,7 +26,7 @@ const PRICE_TYPES = ["通常価格", "関係者割引", "陸上部卸値", "購�
 
 export default function DashboardPage() {
   const [sales, setSales] = useState<SaleRecord[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [inventory, setInventory] = useState<Product[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQuickSale, setShowQuickSale] = useState(false);
