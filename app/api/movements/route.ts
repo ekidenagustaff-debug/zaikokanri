@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
   });
 
   await Promise.all([
-    decreaseInventory(body.商品PageId ?? null, body.移動元, body.移動数 ?? 0),
-    increaseInventory(body.商品PageId ?? null, body.移動先, body.移動数 ?? 0),
+    decreaseInventory(body.商品PageId ?? null, body.移動元, body.移動数 ?? 0, "在庫移動"),
+    increaseInventory(body.商品PageId ?? null, body.移動先, body.移動数 ?? 0, "在庫移動"),
   ]);
 
   return NextResponse.json(parseMovement(page));

@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       });
 
       // 在庫自動減算（水上村）
-      await decreaseInventory(商品PageId, "水上村", row.quantity);
+      await decreaseInventory(商品PageId, "水上村", row.quantity, "Wix受注");
     }
 
     imported.add(row.orderNumber);

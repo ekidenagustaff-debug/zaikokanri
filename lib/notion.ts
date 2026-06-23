@@ -9,6 +9,7 @@ export const DS = {
   products: process.env.NOTION_DB_PRODUCTS!,
   sales: process.env.NOTION_DB_SALES!,
   movements: process.env.NOTION_DB_MOVEMENTS!,
+  auditLog: process.env.NOTION_DB_AUDIT_LOG!,
 };
 
 export type Product = {
