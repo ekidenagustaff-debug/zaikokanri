@@ -24,6 +24,13 @@ const emptyMoveForm = () => ({
   備考: "",
 });
 
+const emptyRestockForm = () => ({
+  商品PageId: "",
+  拠点: "水上村",
+  数量: 1,
+  備考: "",
+});
+
 export default function InventoryPage() {
   const [items, setItems] = useState<Product[]>([]);
   const [movements, setMovements] = useState<MovementRecord[]>([]);
@@ -34,6 +41,9 @@ export default function InventoryPage() {
   const [showMoveForm, setShowMoveForm] = useState(false);
   const [moveForm, setMoveForm] = useState(emptyMoveForm());
   const [moveSaving, setMoveSaving] = useState(false);
+  const [showRestockForm, setShowRestockForm] = useState(false);
+  const [restockForm, setRestockForm] = useState(emptyRestockForm());
+  const [restockSaving, setRestockSaving] = useState(false);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -70,6 +80,20 @@ export default function InventoryPage() {
     fetchAll();
   }
 
+  async function saveRestock() {
+    if (!restockForm.商品PageId) return;
+    setRestockSaving(true);
+    await fetch("/api/restock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(restockForm),
+    });
+    setRestockSaving(false);
+    setShowRestockForm(false);
+    setRestockForm(emptyRestockForm());
+    fetchAll();
+  }
+
   async function saveMove() {
     if (!moveForm.商品PageId) return;
     setMoveSaving(true);
@@ -98,6 +122,12 @@ export default function InventoryPage() {
       {/* ── 在庫テーブル ── */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-slate-800">在庫</h1>
+        <button
+          onClick={() => setShowRestockForm(true)}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg transition"
+        >
+          ＋ 入荷を記録
+        </button>
       </div>
 
       {loading ? (
@@ -302,6 +332,69 @@ export default function InventoryPage() {
               </button>
               <button onClick={() => { toggleArchive(editing!); setEditing(null); }} className="w-full border border-slate-200 text-slate-500 py-2 rounded-lg text-sm hover:bg-slate-50">
                 アーカイブする
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 入荷記録モーダル */}
+      {showRestockForm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-lg">入荷を記録</h2>
+              <button onClick={() => setShowRestockForm(false)} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">商品 *</label>
+                <select
+                  value={restockForm.商品PageId}
+                  onChange={(e) => setRestockForm({ ...restockForm, 商品PageId: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">選択してください</option>
+                  {activeItems.map((p) => (
+                    <option key={p.pageId} value={p.pageId}>{p.品名}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">入荷先（拠点）</label>
+                  <select
+                    value={restockForm.拠点}
+                    onChange={(e) => setRestockForm({ ...restockForm, 拠点: e.target.value })}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                  >
+                    {LOCATIONS.map((l) => <option key={l}>{l}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">数量</label>
+                  <input
+                    type="number" min={1} value={restockForm.数量}
+                    onChange={(e) => setRestockForm({ ...restockForm, 数量: Number(e.target.value) })}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500 mb-1">備考</label>
+                <input
+                  type="text" value={restockForm.備考}
+                  onChange={(e) => setRestockForm({ ...restockForm, 備考: e.target.value })}
+                  placeholder="例：春季仕入れ分"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <button
+                onClick={saveRestock}
+                disabled={restockSaving || !restockForm.商品PageId}
+                className="w-full bg-emerald-600 text-white py-2 rounded-lg disabled:opacity-50 font-semibold"
+              >
+                {restockSaving ? "保存中..." : "入荷を記録する"}
               </button>
             </div>
           </div>

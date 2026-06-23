@@ -1,6 +1,6 @@
 import { notion, DS } from "./notion";
 
-type 原因 = "販売" | "在庫移動" | "手動編集" | "Wix受注";
+type 原因 = "販売" | "在庫移動" | "手動編集" | "Wix受注" | "仕入れ";
 
 export async function logInventoryChange({
   商品名,

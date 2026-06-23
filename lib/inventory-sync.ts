@@ -23,7 +23,7 @@ export async function decreaseInventory(
   商品PageId: string | null,
   拠点: string,
   数量: number,
-  原因: "販売" | "在庫移動" | "Wix受注" = "販売",
+  原因: "販売" | "在庫移動" | "Wix受注" | "仕入れ" = "販売",
 ): Promise<void> {
   if (!商品PageId || !LOCATION_PROPS.includes(拠点 as Location)) return;
   const { value: current, 品名 } = await getLocationValue(商品PageId, 拠点 as Location);
@@ -39,7 +39,8 @@ export async function increaseInventory(
   商品PageId: string | null,
   拠点: string,
   数量: number,
-  原因: "販売" | "在庫移動" | "Wix受注" = "在庫移動",
+  原因: "販売" | "在庫移動" | "Wix受注" | "仕入れ" = "在庫移動",
+  備考?: string,
 ): Promise<void> {
   if (!商品PageId || !LOCATION_PROPS.includes(拠点 as Location)) return;
   const { value: current, 品名 } = await getLocationValue(商品PageId, 拠点 as Location);
@@ -48,7 +49,7 @@ export async function increaseInventory(
     page_id: 商品PageId,
     properties: { [拠点]: { number: next } },
   });
-  await logInventoryChange({ 商品名: 品名, 商品PageId, 拠点, 変更前: current, 変更後: next, 原因 }).catch(() => {});
+  await logInventoryChange({ 商品名: 品名, 商品PageId, 拠点, 変更前: current, 変更後: next, 原因, 備考 }).catch(() => {});
 }
 
 export { getProductSnapshot };
