@@ -1,10 +1,151 @@
 "use client";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
-import type { Product, MovementRecord } from "@/lib/notion";
+import type { Product, MovementRecord, AuditLogRecord } from "@/lib/notion";
 
 const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"] as const;
 type Location = (typeof LOCATIONS)[number];
+
+function HistorySection({
+  movements,
+  restocks,
+  onAddMove,
+  onAddRestock,
+}: {
+  movements: MovementRecord[];
+  restocks: AuditLogRecord[];
+  onAddMove: () => void;
+  onAddRestock: () => void;
+}) {
+  const [tab, setTab] = useState<"move" | "restock">("move");
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+          <button
+            onClick={() => setTab("move")}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === "move" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            在庫移動
+          </button>
+          <button
+            onClick={() => setTab("restock")}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === "restock" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            入荷
+          </button>
+        </div>
+        {tab === "move" ? (
+          <button onClick={onAddMove} className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition">
+            ＋ 移動を記録
+          </button>
+        ) : (
+          <button onClick={onAddRestock} className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg transition">
+            ＋ 入荷を記録
+          </button>
+        )}
+      </div>
+
+      {tab === "move" ? (
+        <>
+          <div className="hidden lg:block bg-white rounded-xl shadow overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-600 font-medium">
+                <tr>
+                  <th className="text-left px-4 py-3">日付</th>
+                  <th className="text-left px-4 py-3">商品</th>
+                  <th className="text-center px-3 py-3">移動数</th>
+                  <th className="text-left px-3 py-3">移動元</th>
+                  <th className="text-left px-3 py-3">移動先</th>
+                  <th className="text-left px-3 py-3">備考</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {movements.length === 0 ? (
+                  <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-400 text-sm">記録がありません</td></tr>
+                ) : movements.slice(0, 30).map((m) => (
+                  <tr key={m.pageId} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-slate-500">{m.日付}</td>
+                    <td className="px-4 py-3 text-slate-800">{m.商品名}</td>
+                    <td className="px-3 py-3 text-center font-semibold text-slate-700">{m.移動数}</td>
+                    <td className="px-3 py-3"><span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs">{m.移動元}</span></td>
+                    <td className="px-3 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">{m.移動先}</span></td>
+                    <td className="px-3 py-3 text-slate-500">{m.備考}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="lg:hidden space-y-2">
+            {movements.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-4">記録がありません</p>
+            ) : movements.slice(0, 30).map((m) => (
+              <div key={m.pageId} className="bg-white rounded-xl border border-slate-100 p-3 text-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-slate-800">{m.商品名}</span>
+                  <span className="text-slate-400 text-xs">{m.日付}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{m.移動元}</span>
+                  <span className="text-slate-400">→</span>
+                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{m.移動先}</span>
+                  <span className="text-slate-600 font-semibold ml-auto">{m.移動数}個</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="hidden lg:block bg-white rounded-xl shadow overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-600 font-medium">
+                <tr>
+                  <th className="text-left px-4 py-3">日時</th>
+                  <th className="text-left px-4 py-3">商品</th>
+                  <th className="text-center px-3 py-3">数量</th>
+                  <th className="text-left px-3 py-3">拠点</th>
+                  <th className="text-left px-3 py-3">備考</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {restocks.length === 0 ? (
+                  <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-400 text-sm">記録がありません</td></tr>
+                ) : restocks.slice(0, 30).map((r) => (
+                  <tr key={r.pageId} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-slate-500">{r.日時.slice(0, 10)}</td>
+                    <td className="px-4 py-3 text-slate-800">{r.商品名}</td>
+                    <td className="px-3 py-3 text-center font-semibold text-emerald-600">+{r.変動数}</td>
+                    <td className="px-3 py-3"><span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs">{r.拠点}</span></td>
+                    <td className="px-3 py-3 text-slate-500">{r.備考}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="lg:hidden space-y-2">
+            {restocks.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-4">記録がありません</p>
+            ) : restocks.slice(0, 30).map((r) => (
+              <div key={r.pageId} className="bg-white rounded-xl border border-slate-100 p-3 text-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-slate-800">{r.商品名}</span>
+                  <span className="text-slate-400 text-xs">{r.日時.slice(0, 10)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">{r.拠点}</span>
+                  <span className="text-emerald-600 font-bold ml-auto">+{r.変動数}個</span>
+                </div>
+                {r.備考 && <p className="text-slate-400 mt-1">{r.備考}</p>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function stockColor(n: number): string {
   if (n <= 0) return "text-red-600 font-bold";
@@ -34,6 +175,7 @@ const emptyRestockForm = () => ({
 export default function InventoryPage() {
   const [items, setItems] = useState<Product[]>([]);
   const [movements, setMovements] = useState<MovementRecord[]>([]);
+  const [restocks, setRestocks] = useState<AuditLogRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState<Partial<Product>>({});
@@ -49,12 +191,14 @@ export default function InventoryPage() {
 
   async function fetchAll() {
     setLoading(true);
-    const [inv, mv] = await Promise.all([
+    const [inv, mv, al] = await Promise.all([
       fetch("/api/inventory").then((r) => r.json()),
       fetch("/api/movements").then((r) => r.json()),
+      fetch("/api/audit-log").then((r) => r.json()),
     ]);
     setItems(inv);
     setMovements(mv);
+    setRestocks((al as AuditLogRecord[]).filter((r) => r.原因 === "仕入れ"));
     setLoading(false);
   }
 
@@ -234,66 +378,13 @@ export default function InventoryPage() {
             })}
           </div>
 
-          {/* ── 在庫移動 ── */}
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-bold text-slate-800">在庫移動履歴</h2>
-            <button
-              onClick={() => setShowMoveForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition"
-            >
-              ＋ 移動を記録
-            </button>
-          </div>
-
-          {/* Desktop movements table */}
-          <div className="hidden lg:block bg-white rounded-xl shadow overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-600 font-medium">
-                <tr>
-                  <th className="text-left px-4 py-3">日付</th>
-                  <th className="text-left px-4 py-3">商品</th>
-                  <th className="text-center px-3 py-3">移動数</th>
-                  <th className="text-left px-3 py-3">移動元</th>
-                  <th className="text-left px-3 py-3">移動先</th>
-                  <th className="text-left px-3 py-3">備考</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {movements.length === 0 ? (
-                  <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-400 text-sm">記録がありません</td></tr>
-                ) : movements.slice(0, 30).map((m) => (
-                  <tr key={m.pageId} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-500">{m.日付}</td>
-                    <td className="px-4 py-3 text-slate-800">{m.商品名}</td>
-                    <td className="px-3 py-3 text-center font-semibold text-slate-700">{m.移動数}</td>
-                    <td className="px-3 py-3"><span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs">{m.移動元}</span></td>
-                    <td className="px-3 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">{m.移動先}</span></td>
-                    <td className="px-3 py-3 text-slate-500">{m.備考}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile movements */}
-          <div className="lg:hidden space-y-2">
-            {movements.length === 0 ? (
-              <p className="text-slate-400 text-sm text-center py-4">記録がありません</p>
-            ) : movements.slice(0, 30).map((m) => (
-              <div key={m.pageId} className="bg-white rounded-xl border border-slate-100 p-3 text-sm">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-slate-800">{m.商品名}</span>
-                  <span className="text-slate-400 text-xs">{m.日付}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{m.移動元}</span>
-                  <span className="text-slate-400">→</span>
-                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{m.移動先}</span>
-                  <span className="text-slate-600 font-semibold ml-auto">{m.移動数}個</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* ── 履歴セクション ── */}
+          <HistorySection
+            movements={movements}
+            restocks={restocks}
+            onAddMove={() => setShowMoveForm(true)}
+            onAddRestock={() => setShowRestockForm(true)}
+          />
         </>
       )}
 
