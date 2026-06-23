@@ -105,41 +105,41 @@ export default function DashboardPage() {
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-700">在庫一覧</p>
-              <div className="flex gap-4">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+              <p className="text-base font-bold text-slate-800">在庫一覧</p>
+              <div className="flex gap-5">
                 {locationTotals.map(({ loc, total }) => (
-                  <span key={loc} className="text-xs text-slate-500">{loc} <span className="font-bold text-slate-700">{total}</span></span>
+                  <span key={loc} className="text-sm text-slate-500">{loc} <span className="font-bold text-slate-800 text-base">{total}</span></span>
                 ))}
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full">
                 <thead>
-                  <tr className="bg-slate-50">
-                    <th className="text-left text-xs font-medium text-slate-400 px-5 py-2.5">商品名</th>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="text-left text-sm font-semibold text-slate-500 px-6 py-3">商品名</th>
                     {LOCATIONS.map((l) => (
-                      <th key={l} className="text-right text-xs font-medium text-slate-400 px-4 py-2.5">{l}</th>
+                      <th key={l} className="text-right text-sm font-semibold text-slate-500 px-5 py-3">{l}</th>
                     ))}
-                    <th className="text-right text-xs font-medium text-slate-400 px-5 py-2.5">合計</th>
+                    <th className="text-right text-sm font-semibold text-slate-500 px-6 py-3">合計</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-100">
                   {inventory.filter((p) => !p.アーカイブ).map((p) => {
                     const row = p as unknown as Record<string, number | null>;
                     const rowTotal = LOCATIONS.reduce((s, l) => s + (row[l] ?? 0), 0);
                     return (
                       <tr key={p.pageId} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-5 py-2.5 text-slate-700 font-medium">{p.品名}</td>
+                        <td className="px-6 py-3.5 text-slate-800 font-medium text-sm">{p.品名}</td>
                         {LOCATIONS.map((l) => {
                           const v = row[l] ?? 0;
                           return (
-                            <td key={l} className={`px-4 py-2.5 text-right tabular-nums ${v <= 0 ? "text-red-500 font-bold" : v <= 10 ? "text-orange-500" : "text-slate-600"}`}>
+                            <td key={l} className={`px-5 py-3.5 text-right tabular-nums text-sm font-semibold ${v <= 0 ? "text-red-500" : v <= 10 ? "text-orange-500" : "text-slate-700"}`}>
                               {v}
                             </td>
                           );
                         })}
-                        <td className="px-5 py-2.5 text-right tabular-nums font-semibold text-slate-700">{rowTotal}</td>
+                        <td className="px-6 py-3.5 text-right tabular-nums text-sm font-bold text-slate-800">{rowTotal}</td>
                       </tr>
                     );
                   })}
