@@ -113,7 +113,9 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
-            <div className="overflow-x-auto">
+
+            {/* デスクトップ: テーブル */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
@@ -145,6 +147,33 @@ export default function DashboardPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* モバイル: カード */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {inventory.filter((p) => !p.アーカイブ).map((p) => {
+                const row = p as unknown as Record<string, number | null>;
+                const rowTotal = LOCATIONS.reduce((s, l) => s + (row[l] ?? 0), 0);
+                return (
+                  <div key={p.pageId} className="px-5 py-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="font-semibold text-slate-800 text-sm leading-snug flex-1 mr-3">{p.品名}</p>
+                      <span className="text-lg font-bold text-slate-800 tabular-nums">{rowTotal}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {LOCATIONS.map((l) => {
+                        const v = row[l] ?? 0;
+                        return (
+                          <div key={l} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
+                            <span className="text-xs text-slate-500">{l}</span>
+                            <span className={`text-sm font-bold tabular-nums ${v <= 0 ? "text-red-500" : v <= 10 ? "text-orange-500" : "text-slate-700"}`}>{v}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
