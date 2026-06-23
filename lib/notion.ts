@@ -10,6 +10,7 @@ export const DS = {
   sales: process.env.NOTION_DB_SALES!,
   movements: process.env.NOTION_DB_MOVEMENTS!,
   auditLog: process.env.NOTION_DB_AUDIT_LOG!,
+  expenses: process.env.NOTION_DB_EXPENSES!,
 };
 
 export type Product = {
@@ -42,6 +43,15 @@ export type SaleRecord = {
   価格種別: string;
   販売拠点: string;
   販売額: number | null;
+  備考: string;
+};
+
+export type ExpenseRecord = {
+  pageId: string;
+  件名: string;
+  日付: string;
+  金額: number | null;
+  カテゴリ: string;
   備考: string;
 };
 
@@ -123,6 +133,19 @@ export function parseSale(page: any): SaleRecord {
     価格種別: getSelect(props["価格種別"]),
     販売拠点: getSelect(props["販売拠点"]),
     販売額: getNumber(props["販売額"]),
+    備考: getRichText(props["備考"]),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function parseExpense(page: any): ExpenseRecord {
+  const props = page.properties;
+  return {
+    pageId: page.id,
+    件名: getTitle(props["件名"]),
+    日付: getDate(props["日付"]),
+    金額: getNumber(props["金額"]),
+    カテゴリ: getSelect(props["カテゴリ"]),
     備考: getRichText(props["備考"]),
   };
 }
