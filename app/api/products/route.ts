@@ -30,7 +30,6 @@ export async function POST(req: NextRequest) {
       関係者価格: { number: body.関係者価格 ?? null },
       陸上部卸値: { number: body.陸上部卸値 ?? null },
       購買会卸値: { number: body.購買会卸値 ?? null },
-      原価: { number: body.原価 ?? null },
       仕入れ額: { number: body.仕入れ額 ?? null },
       備考: { rich_text: [{ text: { content: body.備考 ?? "" } }] },
       水上村: { number: 0 },

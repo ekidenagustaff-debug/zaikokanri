@@ -10,7 +10,6 @@ const emptyForm = (): Partial<Product> => ({
   関係者価格: undefined,
   陸上部卸値: undefined,
   購買会卸値: undefined,
-  原価: undefined,
   仕入れ額: undefined,
   備考: "",
   アーカイブ: false,
@@ -111,7 +110,6 @@ export default function ProductsPage() {
                   <th className="text-right px-3 py-3">関係者価格</th>
                   <th className="text-right px-3 py-3">陸上部卸値</th>
                   <th className="text-right px-3 py-3">購買会卸値</th>
-                  <th className="text-right px-3 py-3">原価</th>
                   <th className="text-right px-3 py-3">仕入れ数</th>
                   <th className="w-24" />
                 </tr>
@@ -168,10 +166,7 @@ export default function ProductsPage() {
                 <Field label="陸上部卸値（¥）">{numField("陸上部卸値")}</Field>
                 <Field label="購買会卸値（¥）">{numField("購買会卸値")}</Field>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="原価（¥）">{numField("原価")}</Field>
-                <Field label="仕入れ数">{numField("仕入れ数")}</Field>
-              </div>
+              <Field label="仕入れ数">{numField("仕入れ数")}</Field>
               <Field label="仕入れ額（¥）">{numField("仕入れ額")}</Field>
               <Field label="備考">
                 <input
@@ -213,7 +208,6 @@ function ProductRow({ p, onEdit, onToggleArchive, archived }: {
       <td className="px-3 py-3 text-right text-slate-600">{yen(p.関係者価格)}</td>
       <td className="px-3 py-3 text-right text-slate-600">{yen(p.陸上部卸値)}</td>
       <td className="px-3 py-3 text-right text-slate-600">{yen(p.購買会卸値)}</td>
-      <td className="px-3 py-3 text-right text-slate-600">{yen(p.原価)}</td>
       <td className="px-3 py-3 text-right text-slate-600">{p.仕入れ数?.toLocaleString() ?? "-"}</td>
       <td className="px-3 py-3 text-right space-x-2">
         <button onClick={() => onEdit(p)} className="text-xs text-blue-500 hover:underline">編集</button>
@@ -247,7 +241,6 @@ function ProductCard({ p, onEdit, onToggleArchive, archived }: {
         <span>関係者価格: {yen(p.関係者価格)}</span>
         <span>陸上部卸値: {yen(p.陸上部卸値)}</span>
         <span>購買会卸値: {yen(p.購買会卸値)}</span>
-        <span>原価: {yen(p.原価)}</span>
         <span>仕入れ数: {p.仕入れ数?.toLocaleString() ?? "-"}</span>
       </div>
     </div>
