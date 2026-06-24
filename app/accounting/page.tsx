@@ -59,10 +59,10 @@ export default function AccountingPage() {
   const byCategory: Record<string, number> = {};
   for (const e of expenses) byCategory[e.カテゴリ] = (byCategory[e.カテゴリ] ?? 0) + (e.金額 ?? 0);
 
-  // 販売総数を商品PageId別に集計
-  const soldByPageId: Record<string, number> = {};
+  // 販売総数を商品名別に集計
+  const soldByName: Record<string, number> = {};
   for (const s of sales) {
-    if (s.商品PageId) soldByPageId[s.商品PageId] = (soldByPageId[s.商品PageId] ?? 0) + (s.販売数 ?? 0);
+    if (s.商品名) soldByName[s.商品名] = (soldByName[s.商品名] ?? 0) + (s.販売数 ?? 0);
   }
 
   // 照合表（アーカイブ除外）
@@ -70,7 +70,7 @@ export default function AccountingPage() {
     .filter((p) => !p.アーカイブ)
     .map((p) => {
       const 在庫 = (p.水上村 ?? 0) + (p.町田寮 ?? 0) + (p.陸上部 ?? 0) + (p.購買会 ?? 0);
-      const 販売総数 = soldByPageId[p.pageId] ?? 0;
+      const 販売総数 = soldByName[p.品名] ?? 0;
       const 仕入れ数 = p.仕入れ数 ?? 0;
       const 差_個数 = 仕入れ数 - 在庫 - 販売総数;
       const 差_額 = p.原価 != null ? 差_個数 * p.原価 : null;
