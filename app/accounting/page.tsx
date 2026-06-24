@@ -36,8 +36,8 @@ export default function AccountingPage() {
 
   useEffect(() => { load(); }, []);
 
-  // ACC = 水上村・町田寮、陸上部 = 陸上部・購買会
-  const ACC_LOCS = new Set(["水上村", "町田寮"]);
+  // ACC = 水上村・町田寮・オンライン、陸上部 = 陸上部・購買会
+  const ACC_LOCS = new Set(["水上村", "町田寮", "オンライン"]);
   const RIKUJO_LOCS = new Set(["陸上部", "購買会"]);
 
   const accSales = sales.filter((s) => ACC_LOCS.has(s.販売拠点));
@@ -149,7 +149,7 @@ export default function AccountingPage() {
         <>
           {/* ACC会計 */}
           <div className="mb-6">
-            <h2 className="text-base font-bold text-slate-700 mb-3">ACC（水上村・町田寮）</h2>
+            <h2 className="text-base font-bold text-slate-700 mb-3">ACC（水上村・町田寮・オンライン）</h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
               <Card label="ACC売上" value={`¥${accRevenue.toLocaleString()}`} color="blue" />
               <Card label="総仕入れ額" value={`¥${totalCost.toLocaleString()}`} color="slate" />
@@ -162,8 +162,8 @@ export default function AccountingPage() {
             </div>
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
               <p className="text-xs font-semibold text-slate-500 mb-2">拠点別内訳</p>
-              <div className="grid grid-cols-2 gap-3">
-                {["水上村", "町田寮"].map((loc) => (
+              <div className="grid grid-cols-3 gap-3">
+                {["水上村", "町田寮", "オンライン"].map((loc) => (
                   <div key={loc} className="bg-slate-50 rounded-xl p-3 text-center">
                     <p className="text-xs text-slate-500 mb-1">{loc}</p>
                     <p className="font-bold text-slate-800">¥{(byLocation[loc] ?? 0).toLocaleString()}</p>
