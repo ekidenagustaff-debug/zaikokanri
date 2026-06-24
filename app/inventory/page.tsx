@@ -552,7 +552,10 @@ export default function InventoryPage() {
                     {MOVE_DESTINATIONS.map((l) => <option key={l}>{l}</option>)}
                   </select>
                   {moveForm.移動先 === "購買会" && (
-                    <p className="text-xs text-amber-600 mt-1">購買会卸値で販売記録されます</p>
+                    <p className="text-xs text-amber-600 mt-1">陸上部→購買会：購買会卸値で販売記録されます</p>
+                  )}
+                  {moveForm.移動先 === "陸上部" && ["水上村", "町田寮"].includes(moveForm.移動元) && (
+                    <p className="text-xs text-amber-600 mt-1">ACC→陸上部：陸上部卸値でACCの販売記録が作成されます</p>
                   )}
                 </div>
               </div>

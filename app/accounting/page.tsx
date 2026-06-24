@@ -36,9 +36,26 @@ export default function AccountingPage() {
 
   useEffect(() => { load(); }, []);
 
+  // ACC = 水上村・町田寮、陸上部 = 陸上部・購買会
+  const ACC_LOCS = new Set(["水上村", "町田寮"]);
+  const RIKUJO_LOCS = new Set(["陸上部", "購買会"]);
+
+  const accSales = sales.filter((s) => ACC_LOCS.has(s.販売拠点));
+  const rikujoSales = sales.filter((s) => RIKUJO_LOCS.has(s.販売拠点));
+
+  const accRevenue = accSales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
+  const rikujoRevenue = rikujoSales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
+
+  // 陸上部がACCから仕入れたコスト = 陸上部卸値の販売レコード合計（ACCが陸上部に売った分）
+  const rikujoCost = accSales
+    .filter((s) => s.価格種別 === "陸上部卸値")
+    .reduce((s, r) => s + (r.販売額 ?? 0), 0);
+
   const totalRevenue = sales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
   const totalCost = products.reduce((s, p) => s + (p.仕入れ額 ?? 0), 0);
   const totalExpenses = expenses.reduce((s, e) => s + (e.金額 ?? 0), 0);
+  const accProfit = accRevenue - totalCost - totalExpenses;
+  const rikujoProfit = rikujoRevenue - rikujoCost;
   const profit = totalRevenue - totalCost - totalExpenses;
 
   const byLocation: Record<string, number> = {};
@@ -69,7 +86,7 @@ export default function AccountingPage() {
   const reconciliation = products
     .filter((p) => !p.アーカイブ)
     .map((p) => {
-      const 在庫 = (p.水上村 ?? 0) + (p.町田寮 ?? 0) + (p.陸上部 ?? 0) + (p.購買会 ?? 0);
+      const 在庫 = (p.水上村 ?? 0) + (p.町田寮 ?? 0) + (p.陸上部 ?? 0);
       const 販売総数 = soldByName[p.品名] ?? 0;
       const 仕入れ数 = p.仕入れ数 ?? 0;
       const 差_個数 = 仕入れ数 - 在庫 - 販売総数;
@@ -118,28 +135,68 @@ export default function AccountingPage() {
         <div className="text-slate-400 text-sm">読み込み中...</div>
       ) : (
         <>
-          {/* サマリーカード */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Card label="累計売上" value={`¥${totalRevenue.toLocaleString()}`} color="blue" />
-            <Card label="総仕入れ額" value={`¥${totalCost.toLocaleString()}`} color="slate" />
-            <Card label="経費合計" value={`¥${totalExpenses.toLocaleString()}`} color="orange" />
-            <Card
-              label="利益"
-              value={`${profit >= 0 ? "" : "-"}¥${Math.abs(profit).toLocaleString()}`}
-              color={profit >= 0 ? "green" : "red"}
-            />
+          {/* ACC会計 */}
+          <div className="mb-6">
+            <h2 className="text-base font-bold text-slate-700 mb-3">ACC（水上村・町田寮）</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
+              <Card label="ACC売上" value={`¥${accRevenue.toLocaleString()}`} color="blue" />
+              <Card label="総仕入れ額" value={`¥${totalCost.toLocaleString()}`} color="slate" />
+              <Card label="経費合計" value={`¥${totalExpenses.toLocaleString()}`} color="orange" />
+              <Card
+                label="ACC利益"
+                value={`${accProfit >= 0 ? "" : "-"}¥${Math.abs(accProfit).toLocaleString()}`}
+                color={accProfit >= 0 ? "green" : "red"}
+              />
+            </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+              <p className="text-xs font-semibold text-slate-500 mb-2">拠点別内訳</p>
+              <div className="grid grid-cols-2 gap-3">
+                {["水上村", "町田寮"].map((loc) => (
+                  <div key={loc} className="bg-slate-50 rounded-xl p-3 text-center">
+                    <p className="text-xs text-slate-500 mb-1">{loc}</p>
+                    <p className="font-bold text-slate-800">¥{(byLocation[loc] ?? 0).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-slate-400 mt-2">※ 陸上部卸値での売上 ¥{(byLocation["水上村"] ?? 0) + (byLocation["町田寮"] ?? 0) > 0 ? rikujoCost.toLocaleString() : 0} を含む</p>
+            </div>
           </div>
 
-          {/* 拠点別売上 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 mb-6">
-            <p className="text-sm font-bold text-slate-700 mb-3">拠点別売上</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {["水上村", "町田寮", "陸上部", "購買会"].map((loc) => (
-                <div key={loc} className="bg-slate-50 rounded-xl p-3 text-center">
-                  <p className="text-xs text-slate-500 mb-1">{loc}</p>
-                  <p className="font-bold text-slate-800">¥{(byLocation[loc] ?? 0).toLocaleString()}</p>
-                </div>
-              ))}
+          {/* 陸上部会計 */}
+          <div className="mb-6">
+            <h2 className="text-base font-bold text-slate-700 mb-3">陸上部</h2>
+            <div className="grid grid-cols-3 gap-4 mb-3">
+              <Card label="陸上部売上" value={`¥${rikujoRevenue.toLocaleString()}`} color="blue" />
+              <Card label="仕入れコスト（陸上部卸値）" value={`¥${rikujoCost.toLocaleString()}`} color="slate" />
+              <Card
+                label="陸上部利益"
+                value={`${rikujoProfit >= 0 ? "" : "-"}¥${Math.abs(rikujoProfit).toLocaleString()}`}
+                color={rikujoProfit >= 0 ? "green" : "red"}
+              />
+            </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+              <p className="text-xs font-semibold text-slate-500 mb-2">内訳</p>
+              <div className="grid grid-cols-2 gap-3">
+                {["陸上部", "購買会"].map((loc) => (
+                  <div key={loc} className="bg-slate-50 rounded-xl p-3 text-center">
+                    <p className="text-xs text-slate-500 mb-1">{loc}</p>
+                    <p className="font-bold text-slate-800">¥{(byLocation[loc] ?? 0).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 全体サマリー */}
+          <div className="bg-slate-50 rounded-2xl p-4 mb-6 flex flex-wrap gap-4 items-center justify-between">
+            <p className="text-sm font-bold text-slate-600">全体合計</p>
+            <div className="flex gap-6 flex-wrap">
+              <span className="text-sm text-slate-500">総売上 <span className="font-bold text-slate-800">¥{totalRevenue.toLocaleString()}</span></span>
+              <span className="text-sm text-slate-500">仕入れ <span className="font-bold text-slate-800">¥{totalCost.toLocaleString()}</span></span>
+              <span className="text-sm text-slate-500">経費 <span className="font-bold text-slate-800">¥{totalExpenses.toLocaleString()}</span></span>
+              <span className={`text-sm font-bold ${profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                純利益 {profit >= 0 ? "" : "-"}¥{Math.abs(profit).toLocaleString()}
+              </span>
             </div>
           </div>
 
