@@ -22,7 +22,7 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
 }
 
 const LOCATIONS = ["水上村", "町田寮", "陸上部"];
-const PRICE_TYPES = ["通常価格", "関係者割引", "陸上部卸値", "購買会卸値"];
+const PRICE_TYPES = ["通常価格", "関係者割引", "陸上部卸値", "購買会卸値", "プレゼント"];
 
 export default function DashboardPage() {
   const [sales, setSales] = useState<SaleRecord[]>([]);
