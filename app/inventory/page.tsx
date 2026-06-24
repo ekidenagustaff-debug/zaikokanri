@@ -178,9 +178,6 @@ export default function InventoryPage() {
   const [movements, setMovements] = useState<MovementRecord[]>([]);
   const [restocks, setRestocks] = useState<AuditLogRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<Product | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Product>>({});
-  const [saving, setSaving] = useState(false);
   const [showMoveForm, setShowMoveForm] = useState(false);
   const [moveForm, setMoveForm] = useState(emptyMoveForm());
   const [moveSaving, setMoveSaving] = useState(false);
@@ -201,19 +198,6 @@ export default function InventoryPage() {
     setMovements(mv);
     setRestocks((al as AuditLogRecord[]).filter((r) => r.原因 === "仕入れ"));
     setLoading(false);
-  }
-
-  async function saveEdit() {
-    if (!editing) return;
-    setSaving(true);
-    await fetch(`/api/inventory/${editing.pageId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editForm),
-    });
-    setSaving(false);
-    setEditing(null);
-    fetchAll();
   }
 
   async function toggleArchive(item: Product) {
@@ -305,8 +289,7 @@ export default function InventoryPage() {
                         );
                       })}
                       <td className="px-3 py-3 text-center font-bold text-slate-700">{total}</td>
-                      <td className="px-3 py-3 text-right space-x-2">
-                        <button onClick={() => { setEditing(item); setEditForm({ ...item }); }} className="text-xs text-blue-500 hover:underline">編集</button>
+                      <td className="px-3 py-3 text-right">
                         <button onClick={() => toggleArchive(item)} className="text-xs text-slate-400 hover:underline">アーカイブ</button>
                       </td>
                     </tr>
@@ -354,8 +337,7 @@ export default function InventoryPage() {
                 <div key={item.pageId} className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
                   <div className="flex items-start justify-between mb-3">
                     <p className="font-semibold text-slate-800 text-sm">{item.品名}</p>
-                    <div className="space-x-2 shrink-0 ml-2">
-                      <button onClick={() => { setEditing(item); setEditForm({ ...item }); }} className="text-xs text-blue-500 hover:underline">編集</button>
+                    <div className="shrink-0 ml-2">
                       <button onClick={() => toggleArchive(item)} className="text-xs text-slate-400 hover:underline">アーカイブ</button>
                     </div>
                   </div>
@@ -387,47 +369,6 @@ export default function InventoryPage() {
             onAddRestock={() => setShowRestockForm(true)}
           />
         </>
-      )}
-
-      {/* 在庫数編集モーダル */}
-      {editing && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-lg">在庫数を編集</h2>
-              <button onClick={() => setEditing(null)} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
-            </div>
-            <p className="font-medium text-slate-800 mb-4">{editing.品名}</p>
-            <div className="space-y-3">
-              {LOCATIONS.map((loc) => (
-                <div key={loc}>
-                  <label className="block text-xs text-slate-500 mb-1">{loc}</label>
-                  <input
-                    type="number" min={0}
-                    value={editForm[loc] ?? 0}
-                    onChange={(e) => setEditForm({ ...editForm, [loc]: Number(e.target.value) })}
-                    className="w-full border rounded-lg px-3 py-2"
-                  />
-                </div>
-              ))}
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">備考</label>
-                <input
-                  type="text"
-                  value={editForm.備考 ?? ""}
-                  onChange={(e) => setEditForm({ ...editForm, 備考: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
-                />
-              </div>
-              <button onClick={saveEdit} disabled={saving} className="w-full bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50">
-                {saving ? "保存中..." : "保存"}
-              </button>
-              <button onClick={() => { toggleArchive(editing!); setEditing(null); }} className="w-full border border-slate-200 text-slate-500 py-2 rounded-lg text-sm hover:bg-slate-50">
-                アーカイブする
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* 入荷記録モーダル */}
