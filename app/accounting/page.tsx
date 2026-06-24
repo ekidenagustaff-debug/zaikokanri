@@ -59,6 +59,24 @@ export default function AccountingPage() {
   const byCategory: Record<string, number> = {};
   for (const e of expenses) byCategory[e.カテゴリ] = (byCategory[e.カテゴリ] ?? 0) + (e.金額 ?? 0);
 
+  // 販売総数を商品PageId別に集計
+  const soldByPageId: Record<string, number> = {};
+  for (const s of sales) {
+    if (s.商品PageId) soldByPageId[s.商品PageId] = (soldByPageId[s.商品PageId] ?? 0) + (s.販売数 ?? 0);
+  }
+
+  // 照合表（アーカイブ除外）
+  const reconciliation = products
+    .filter((p) => !p.アーカイブ)
+    .map((p) => {
+      const 在庫 = (p.水上村 ?? 0) + (p.町田寮 ?? 0) + (p.陸上部 ?? 0) + (p.購買会 ?? 0);
+      const 販売総数 = soldByPageId[p.pageId] ?? 0;
+      const 仕入れ数 = p.仕入れ数 ?? 0;
+      const 差_個数 = 仕入れ数 - 在庫 - 販売総数;
+      const 差_額 = p.原価 != null ? 差_個数 * p.原価 : null;
+      return { p, 在庫, 販売総数, 仕入れ数, 差_個数, 差_額 };
+    });
+
   function openNew() { setForm({ ...emptyForm }); setEditId(null); setShowForm(true); }
   function openEdit(e: ExpenseRecord) {
     setForm({ 件名: e.件名, 日付: e.日付, 金額: String(e.金額 ?? ""), カテゴリ: e.カテゴリ || "その他", 備考: e.備考 });
@@ -194,6 +212,66 @@ export default function AccountingPage() {
                 </div>
               </>
             )}
+          </div>
+
+          {/* 在庫照合表 */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <p className="text-sm font-bold text-slate-700">在庫照合表</p>
+              <p className="text-xs text-slate-400 mt-0.5">仕入れ数 − 在庫 − 販売総数 ＝ 差（0なら一致）</p>
+            </div>
+            {/* Desktop */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="text-left text-xs font-semibold text-slate-500 px-6 py-3">商品名</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">仕入れ数</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">在庫</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">販売総数</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">差（個）</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-6 py-3">差（額）</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {reconciliation.map(({ p, 在庫, 販売総数, 仕入れ数, 差_個数, 差_額 }) => (
+                    <tr key={p.pageId} className={`hover:bg-slate-50 ${差_個数 !== 0 ? "bg-red-50" : ""}`}>
+                      <td className="px-6 py-3 text-slate-800 font-medium">{p.品名}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">{仕入れ数}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">{在庫}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">{販売総数}</td>
+                      <td className={`px-4 py-3 text-right tabular-nums font-bold ${差_個数 === 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        {差_個数 > 0 ? `+${差_個数}` : 差_個数}
+                      </td>
+                      <td className={`px-6 py-3 text-right tabular-nums font-bold ${差_額 === null ? "text-slate-400" : 差_額 === 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        {差_額 === null ? "—" : `${差_額 > 0 ? "+" : ""}¥${差_額.toLocaleString()}`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {reconciliation.map(({ p, 在庫, 販売総数, 仕入れ数, 差_個数, 差_額 }) => (
+                <div key={p.pageId} className={`px-5 py-4 ${差_個数 !== 0 ? "bg-red-50" : ""}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold text-slate-800 text-sm">{p.品名}</p>
+                    <span className={`text-sm font-bold ${差_個数 === 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      差: {差_個数 > 0 ? `+${差_個数}` : 差_個数}個
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs text-center">
+                    <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">仕入れ数</p><p className="font-bold text-slate-700">{仕入れ数}</p></div>
+                    <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">在庫</p><p className="font-bold text-slate-700">{在庫}</p></div>
+                    <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">販売総数</p><p className="font-bold text-slate-700">{販売総数}</p></div>
+                  </div>
+                  {差_額 !== null && 差_額 !== 0 && (
+                    <p className="text-xs text-red-600 font-semibold mt-2 text-right">差額: {差_額 > 0 ? "+" : ""}¥{差_額.toLocaleString()}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* 商品別売上 */}
