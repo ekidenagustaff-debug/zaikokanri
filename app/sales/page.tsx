@@ -5,7 +5,7 @@ import ResponsiveTable from "@/components/ResponsiveTable";
 import type { Product, SaleRecord } from "@/lib/notion";
 
 const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"];
-const PRICE_TYPES = ["通常価格", "関係者割引", "陸上部卸値", "購買会卸値"];
+const PRICE_TYPES = ["通常価格", "関係者割引", "陸上部卸値", "購買会卸値", "プレゼント"];
 
 function priceForType(product: Product, type: string): number | null {
   if (type === "通常価格") return product.通常価格;
@@ -15,7 +15,7 @@ function priceForType(product: Product, type: string): number | null {
   return null;
 }
 
-type SortKey = "date" | "amount" | "product";
+type SortKey = "date" | "amount" | "product" | "priceType" | "location";
 type SortOrder = "asc" | "desc";
 
 export default function SalesPage() {
@@ -73,6 +73,12 @@ export default function SalesPage() {
       } else if (sortKey === "amount") {
         aVal = a.販売額 ?? 0;
         bVal = b.販売額 ?? 0;
+      } else if (sortKey === "priceType") {
+        aVal = a.価格種別;
+        bVal = b.価格種別;
+      } else if (sortKey === "location") {
+        aVal = a.販売拠点;
+        bVal = b.販売拠点;
       } else {
         aVal = a.商品名;
         bVal = b.商品名;
@@ -138,6 +144,8 @@ export default function SalesPage() {
                     <option value="date">日付</option>
                     <option value="amount">販売額</option>
                     <option value="product">商品名</option>
+                    <option value="priceType">価格種別</option>
+                    <option value="location">拠点</option>
                   </select>
                 </div>
                 <div>
