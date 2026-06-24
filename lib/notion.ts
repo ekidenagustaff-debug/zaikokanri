@@ -24,6 +24,7 @@ export type Product = {
   陸上部卸値: number | null;
   購買会卸値: number | null;
   仕入れ額: number | null;
+  原価: number | null;
   備考: string;
   水上村: number | null;
   町田寮: number | null;
@@ -124,6 +125,7 @@ export function parseProduct(page: any): Product {
     購買会卸値: getNumber(props["購買会卸値"]),
 
     仕入れ額: getNumber(props["仕入れ額"]),
+    原価: getNumber(props["原価"]),
     備考: getRichText(props["備考"]),
     水上村: getNumber(props["水上村"]),
     町田寮: getNumber(props["町田寮"]),

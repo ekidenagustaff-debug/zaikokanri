@@ -10,6 +10,7 @@ const emptyForm = (): Partial<Product> => ({
   関係者価格: undefined,
   陸上部卸値: undefined,
   購買会卸値: undefined,
+  原価: undefined,
   仕入れ額: undefined,
   備考: "",
   アーカイブ: false,
@@ -74,12 +75,23 @@ export default function ProductsPage() {
   }
 
   function numField(key: keyof Product) {
+    const isAutoCalc = key === "仕入れ額";
     return (
       <input
         type="number"
         value={(form[key] as number) ?? ""}
-        onChange={(e) => setForm({ ...form, [key]: e.target.value === "" ? undefined : Number(e.target.value) })}
-        className="w-full border rounded-lg px-3 py-2 text-sm"
+        onChange={(e) => {
+          const val = e.target.value === "" ? undefined : Number(e.target.value);
+          const next = { ...form, [key]: val };
+          if (key === "原価" || key === "仕入れ数") {
+            const 原価 = key === "原価" ? val : (form.原価 as number | undefined);
+            const 数 = key === "仕入れ数" ? val : (form.仕入れ数 as number | undefined);
+            next.仕入れ額 = 原価 != null && 数 != null ? 原価 * 数 : undefined;
+          }
+          setForm(next);
+        }}
+        readOnly={isAutoCalc}
+        className={`w-full border rounded-lg px-3 py-2 text-sm ${isAutoCalc ? "bg-slate-50 text-slate-500 cursor-default" : ""}`}
       />
     );
   }
@@ -110,7 +122,9 @@ export default function ProductsPage() {
                   <th className="text-right px-3 py-3">関係者価格</th>
                   <th className="text-right px-3 py-3">陸上部卸値</th>
                   <th className="text-right px-3 py-3">購買会卸値</th>
+                  <th className="text-right px-3 py-3">原価</th>
                   <th className="text-right px-3 py-3">仕入れ数</th>
+                  <th className="text-right px-3 py-3">仕入れ額</th>
                   <th className="w-24" />
                 </tr>
               </thead>
@@ -166,8 +180,11 @@ export default function ProductsPage() {
                 <Field label="陸上部卸値（¥）">{numField("陸上部卸値")}</Field>
                 <Field label="購買会卸値（¥）">{numField("購買会卸値")}</Field>
               </div>
-              <Field label="仕入れ数">{numField("仕入れ数")}</Field>
-              <Field label="仕入れ額（¥）">{numField("仕入れ額")}</Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="原価（¥）">{numField("原価")}</Field>
+                <Field label="仕入れ数">{numField("仕入れ数")}</Field>
+              </div>
+              <Field label="仕入れ額（¥）— 原価×仕入れ数で自動計算">{numField("仕入れ額")}</Field>
               <Field label="備考">
                 <input
                   type="text"
@@ -208,7 +225,9 @@ function ProductRow({ p, onEdit, onToggleArchive, archived }: {
       <td className="px-3 py-3 text-right text-slate-600">{yen(p.関係者価格)}</td>
       <td className="px-3 py-3 text-right text-slate-600">{yen(p.陸上部卸値)}</td>
       <td className="px-3 py-3 text-right text-slate-600">{yen(p.購買会卸値)}</td>
+      <td className="px-3 py-3 text-right text-slate-600">{yen(p.原価)}</td>
       <td className="px-3 py-3 text-right text-slate-600">{p.仕入れ数?.toLocaleString() ?? "-"}</td>
+      <td className="px-3 py-3 text-right text-slate-600">{yen(p.仕入れ額)}</td>
       <td className="px-3 py-3 text-right space-x-2">
         <button onClick={() => onEdit(p)} className="text-xs text-blue-500 hover:underline">編集</button>
         <button onClick={() => onToggleArchive(p)} className="text-xs text-slate-400 hover:underline">
@@ -241,7 +260,9 @@ function ProductCard({ p, onEdit, onToggleArchive, archived }: {
         <span>関係者価格: {yen(p.関係者価格)}</span>
         <span>陸上部卸値: {yen(p.陸上部卸値)}</span>
         <span>購買会卸値: {yen(p.購買会卸値)}</span>
+        <span>原価: {yen(p.原価)}</span>
         <span>仕入れ数: {p.仕入れ数?.toLocaleString() ?? "-"}</span>
+        <span>仕入れ額: {yen(p.仕入れ額)}</span>
       </div>
     </div>
   );
