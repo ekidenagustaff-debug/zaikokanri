@@ -58,6 +58,12 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
+    // 返金済み・未払いは取り込まない
+    if (row.paymentStatus === "FULLY_REFUNDED" || row.paymentStatus === "NOT_PAID") {
+      skipped++;
+      continue;
+    }
+
     const 商品名 = row.isShipping
       ? "送料"
       : [row.itemName, row.size, row.color ? `(${row.color})` : ""].filter(Boolean).join(" ");
