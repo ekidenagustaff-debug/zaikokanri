@@ -90,9 +90,21 @@ export default function AccountingPage() {
       const 販売総数 = soldByName[p.品名] ?? 0;
       const 仕入れ数 = p.仕入れ数 ?? 0;
       const 差_個数 = 仕入れ数 - 在庫 - 販売総数;
-      const 差_額 = p.原価 != null ? 差_個数 * p.原価 : null;
-      return { p, 在庫, 販売総数, 仕入れ数, 差_個数, 差_額 };
+      return { p, 在庫, 販売総数, 仕入れ数, 差_個数 };
     });
+
+  // 損益表（商品別：仕入れ額 vs 売上）
+  const plRows = products
+    .filter((p) => !p.アーカイブ)
+    .map((p) => {
+      const 仕入れ額 = p.仕入れ額 ?? 0;
+      const 売上 = Object.entries(byProduct).find(([k]) => k === p.品名)?.[1].合計 ?? 0;
+      const 損益 = 売上 - 仕入れ額;
+      return { p, 仕入れ額, 売上, 損益 };
+    })
+    .filter((r) => r.仕入れ額 > 0 || r.売上 > 0);
+  const plTotal = { 仕入れ額: plRows.reduce((s, r) => s + r.仕入れ額, 0), 売上: plRows.reduce((s, r) => s + r.売上, 0), 損益: 0 };
+  plTotal.損益 = plTotal.売上 - plTotal.仕入れ額;
 
   function openNew() { setForm({ ...emptyForm }); setEditId(null); setShowForm(true); }
   function openEdit(e: ExpenseRecord) {
@@ -286,22 +298,18 @@ export default function AccountingPage() {
                     <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">仕入れ数</th>
                     <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">在庫</th>
                     <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">販売総数</th>
-                    <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">差（個）</th>
-                    <th className="text-right text-xs font-semibold text-slate-500 px-6 py-3">差（額）</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-6 py-3">差（個）</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {reconciliation.map(({ p, 在庫, 販売総数, 仕入れ数, 差_個数, 差_額 }) => (
+                  {reconciliation.map(({ p, 在庫, 販売総数, 仕入れ数, 差_個数 }) => (
                     <tr key={p.pageId} className={`hover:bg-slate-50 ${差_個数 !== 0 ? "bg-red-50" : ""}`}>
                       <td className="px-6 py-3 text-slate-800 font-medium">{p.品名}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-slate-600">{仕入れ数}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-slate-600">{在庫}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-slate-600">{販売総数}</td>
-                      <td className={`px-4 py-3 text-right tabular-nums font-bold ${差_個数 === 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      <td className={`px-6 py-3 text-right tabular-nums font-bold ${差_個数 === 0 ? "text-emerald-600" : "text-red-600"}`}>
                         {差_個数 > 0 ? `+${差_個数}` : 差_個数}
-                      </td>
-                      <td className={`px-6 py-3 text-right tabular-nums font-bold ${差_額 === null ? "text-slate-400" : 差_額 === 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {差_額 === null ? "—" : `${差_額 > 0 ? "+" : ""}¥${差_額.toLocaleString()}`}
                       </td>
                     </tr>
                   ))}
@@ -310,7 +318,7 @@ export default function AccountingPage() {
             </div>
             {/* Mobile */}
             <div className="md:hidden divide-y divide-slate-100">
-              {reconciliation.map(({ p, 在庫, 販売総数, 仕入れ数, 差_個数, 差_額 }) => (
+              {reconciliation.map(({ p, 在庫, 販売総数, 仕入れ数, 差_個数 }) => (
                 <div key={p.pageId} className={`px-5 py-4 ${差_個数 !== 0 ? "bg-red-50" : ""}`}>
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-semibold text-slate-800 text-sm">{p.品名}</p>
@@ -323,11 +331,74 @@ export default function AccountingPage() {
                     <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">在庫</p><p className="font-bold text-slate-700">{在庫}</p></div>
                     <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">販売総数</p><p className="font-bold text-slate-700">{販売総数}</p></div>
                   </div>
-                  {差_額 !== null && 差_額 !== 0 && (
-                    <p className="text-xs text-red-600 font-semibold mt-2 text-right">差額: {差_額 > 0 ? "+" : ""}¥{差_額.toLocaleString()}</p>
-                  )}
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* 損益表 */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <p className="text-sm font-bold text-slate-700">損益表（商品別）</p>
+              <p className="text-xs text-slate-400 mt-0.5">売上 − 仕入れ額 ＝ 損益</p>
+            </div>
+            {/* Desktop */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="text-left text-xs font-semibold text-slate-500 px-6 py-3">商品名</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">仕入れ額</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">売上</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-6 py-3">損益</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {plRows.map(({ p, 仕入れ額, 売上, 損益 }) => (
+                    <tr key={p.pageId} className="hover:bg-slate-50">
+                      <td className="px-6 py-3 text-slate-800 font-medium">{p.品名}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">¥{仕入れ額.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">¥{売上.toLocaleString()}</td>
+                      <td className={`px-6 py-3 text-right tabular-nums font-bold ${損益 >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        {損益 >= 0 ? "+" : ""}¥{損益.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-slate-50 font-semibold border-t-2 border-slate-200">
+                    <td className="px-6 py-3 text-slate-700">合計</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-slate-700">¥{plTotal.仕入れ額.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-slate-700">¥{plTotal.売上.toLocaleString()}</td>
+                    <td className={`px-6 py-3 text-right tabular-nums font-bold ${plTotal.損益 >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {plTotal.損益 >= 0 ? "+" : ""}¥{plTotal.損益.toLocaleString()}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {plRows.map(({ p, 仕入れ額, 売上, 損益 }) => (
+                <div key={p.pageId} className="px-5 py-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold text-slate-800 text-sm">{p.品名}</p>
+                    <span className={`text-sm font-bold ${損益 >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {損益 >= 0 ? "+" : ""}¥{損益.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-center">
+                    <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">仕入れ額</p><p className="font-bold text-slate-700">¥{仕入れ額.toLocaleString()}</p></div>
+                    <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">売上</p><p className="font-bold text-slate-700">¥{売上.toLocaleString()}</p></div>
+                  </div>
+                </div>
+              ))}
+              <div className="px-5 py-4 bg-slate-50">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-700 text-sm">合計損益</p>
+                  <span className={`font-bold ${plTotal.損益 >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    {plTotal.損益 >= 0 ? "+" : ""}¥{plTotal.損益.toLocaleString()}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
