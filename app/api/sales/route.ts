@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseSale } from "@/lib/notion";
-import { decreaseInventory } from "@/lib/inventory-sync";
+import { decreaseInventory, logMovement } from "@/lib/inventory-sync";
 
 export async function GET() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,7 +41,24 @@ export async function POST(req: NextRequest) {
     properties: props as Parameters<typeof notion.pages.create>[0]["properties"],
   });
 
-  await decreaseInventory(body.商品PageId ?? null, body.販売拠点, body.販売数 ?? 1);
+  const 移動先 = body.価格種別 === "陸上部卸値" ? "陸上部" : "顧客";
+  const 種別 = body.価格種別 === "陸上部卸値" ? "拠点間移動" : "販売";
+
+  await Promise.all([
+    decreaseInventory(body.商品PageId ?? null, body.販売拠点, body.販売数 ?? 1),
+    body.商品名 && body.商品名 !== "送料"
+      ? logMovement({
+          商品名: body.商品名,
+          商品PageId: body.商品PageId ?? null,
+          日付: body.日付 ?? new Date().toISOString().slice(0, 10),
+          移動数: body.販売数 ?? 1,
+          移動元: body.販売拠点 ?? "水上村",
+          移動先,
+          種別,
+          備考: body.備考 ?? "",
+        })
+      : Promise.resolve(),
+  ]);
 
   return NextResponse.json(parseSale(page));
 }

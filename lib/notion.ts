@@ -77,6 +77,7 @@ export type MovementRecord = {
   移動数: number | null;
   移動元: string;
   移動先: string;
+  種別: string;
   備考: string;
 };
 
@@ -194,6 +195,7 @@ export function parseMovement(page: any): MovementRecord {
     移動数: getNumber(props["移動数"]),
     移動元: getSelect(props["移動元"]),
     移動先: getSelect(props["移動先"]),
+    種別: getSelect(props["種別"]),
     備考: getRichText(props["備考"]),
   };
 }

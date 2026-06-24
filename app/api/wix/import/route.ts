@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseSale } from "@/lib/notion";
 import { createProductIfNotExists } from "@/lib/product-sync";
-import { decreaseInventory } from "@/lib/inventory-sync";
+import { decreaseInventory, logMovement } from "@/lib/inventory-sync";
 
 export type ImportRow = {
   orderNumber: string;
@@ -94,8 +94,20 @@ export async function POST(req: NextRequest) {
         } as Parameters<typeof notion.pages.create>[0]["properties"],
       });
 
-      // 在庫自動減算（水上村）
-      await decreaseInventory(商品PageId, "水上村", row.quantity, "Wix受注");
+      // 在庫自動減算（水上村）+ 在庫移動ログ記録
+      await Promise.all([
+        decreaseInventory(商品PageId, "水上村", row.quantity, "Wix受注"),
+        logMovement({
+          商品名,
+          商品PageId,
+          日付: row.orderDate,
+          移動数: row.quantity,
+          移動元: "水上村",
+          移動先: "顧客",
+          種別: "Wix受注",
+          備考: `[Wix#${row.orderNumber}] ${row.customerName}`,
+        }),
+      ]);
     }
 
     imported.add(rowKey);
