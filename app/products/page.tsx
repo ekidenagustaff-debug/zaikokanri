@@ -75,7 +75,7 @@ export default function ProductsPage() {
   }
 
   function numField(key: keyof Product) {
-    const isAutoCalc = key === "仕入れ額";
+    const isAutoCalc = key === "仕入れ額" || key === "陸上部卸値" || key === "購買会卸値";
     return (
       <input
         type="number"
@@ -87,6 +87,10 @@ export default function ProductsPage() {
             const 原価 = key === "原価" ? val : (form.原価 as number | undefined);
             const 数 = key === "仕入れ数" ? val : (form.仕入れ数 as number | undefined);
             next.仕入れ額 = 原価 != null && 数 != null ? 原価 * 数 : undefined;
+          }
+          if (key === "通常価格") {
+            next.陸上部卸値 = val != null ? Math.round(val * 0.87) : undefined;
+            next.購買会卸値 = val != null ? Math.round(val * 0.90) : undefined;
           }
           setForm(next);
         }}
@@ -177,8 +181,8 @@ export default function ProductsPage() {
                 <Field label="関係者価格（¥）">{numField("関係者価格")}</Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="陸上部卸値（¥）">{numField("陸上部卸値")}</Field>
-                <Field label="購買会卸値（¥）">{numField("購買会卸値")}</Field>
+                <Field label="陸上部卸値（¥）— 通常価格×87%">{numField("陸上部卸値")}</Field>
+                <Field label="購買会卸値（¥）— 通常価格×90%">{numField("購買会卸値")}</Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="原価（¥）">{numField("原価")}</Field>
