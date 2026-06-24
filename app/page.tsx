@@ -21,7 +21,7 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
   );
 }
 
-const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"];
+const LOCATIONS = ["水上村", "町田寮", "陸上部"];
 const PRICE_TYPES = ["通常価格", "関係者割引", "陸上部卸値", "購買会卸値"];
 
 export default function DashboardPage() {
@@ -45,7 +45,7 @@ export default function DashboardPage() {
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const monthlySales = sales.filter((s) => s.日付.startsWith(thisMonth));
   const monthlyRevenue = monthlySales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
-  const totalStock = inventory.reduce((s, r) => s + (r.水上村 ?? 0) + (r.町田寮 ?? 0) + (r.陸上部 ?? 0) + (r.購買会 ?? 0), 0);
+  const totalStock = inventory.reduce((s, r) => s + (r.水上村 ?? 0) + (r.町田寮 ?? 0) + (r.陸上部 ?? 0), 0);
   const locationTotals = LOCATIONS.map((loc) => ({
     loc,
     total: inventory.reduce((s, r) => s + ((r as unknown as Record<string, number | null>)[loc] ?? 0), 0),

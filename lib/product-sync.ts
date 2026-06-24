@@ -1,6 +1,6 @@
 import { notion, DS } from "./notion";
 
-const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"];
+const LOCATIONS = ["水上村", "町田寮", "陸上部"];
 
 export async function getProductMap(): Promise<Map<string, string>> {
   const map = new Map<string, string>();

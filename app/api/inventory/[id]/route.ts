@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { notion, parseProduct } from "@/lib/notion";
 import { logInventoryChange } from "@/lib/audit-log";
 
-const LOCATION_COLS = ["水上村", "町田寮", "陸上部", "購買会"];
+const LOCATION_COLS = ["水上村", "町田寮", "陸上部"];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

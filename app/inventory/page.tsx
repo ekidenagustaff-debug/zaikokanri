@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import type { Product, MovementRecord, AuditLogRecord } from "@/lib/notion";
 
-const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"] as const;
+const LOCATIONS = ["水上村", "町田寮", "陸上部"] as const;
+const MOVE_DESTINATIONS = ["水上村", "町田寮", "陸上部", "購買会"] as const;
 type Location = (typeof LOCATIONS)[number];
 
 function HistorySection({
@@ -548,8 +549,11 @@ export default function InventoryPage() {
                     onChange={(e) => setMoveForm({ ...moveForm, 移動先: e.target.value })}
                     className="w-full border rounded-lg px-3 py-2 text-sm"
                   >
-                    {LOCATIONS.map((l) => <option key={l}>{l}</option>)}
+                    {MOVE_DESTINATIONS.map((l) => <option key={l}>{l}</option>)}
                   </select>
+                  {moveForm.移動先 === "購買会" && (
+                    <p className="text-xs text-amber-600 mt-1">購買会卸値で販売記録されます</p>
+                  )}
                 </div>
               </div>
               <div>

@@ -1,7 +1,7 @@
 import { notion } from "./notion";
 import { logInventoryChange } from "./audit-log";
 
-const LOCATION_PROPS = ["水上村", "町田寮", "陸上部", "購買会"] as const;
+const LOCATION_PROPS = ["水上村", "町田寮", "陸上部"] as const;
 type Location = (typeof LOCATION_PROPS)[number];
 
 async function getProductSnapshot(商品PageId: string): Promise<{ 品名: string; value: number; page: unknown }> {
