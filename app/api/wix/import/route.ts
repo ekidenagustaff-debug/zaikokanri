@@ -32,7 +32,10 @@ async function getImportedOrderNumbers(): Promise<Set<string>> {
       .forEach((r: any) => {
         const sale = parseSale(r);
         const match = sale.備考.match(/\[Wix#(\d+)\]/);
-        if (match) imported.add(match[1]);
+        if (match) {
+          const key = sale.商品名 === "送料" ? `${match[1]}-shipping` : match[1];
+          imported.add(key);
+        }
       });
     cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
   } while (cursor);
@@ -49,7 +52,8 @@ export async function POST(req: NextRequest) {
   let skipped = 0;
 
   for (const row of rows) {
-    if (imported.has(row.orderNumber)) {
+    const rowKey = row.isShipping ? `${row.orderNumber}-shipping` : row.orderNumber;
+    if (imported.has(rowKey)) {
       skipped++;
       continue;
     }
@@ -94,7 +98,7 @@ export async function POST(req: NextRequest) {
       await decreaseInventory(商品PageId, "水上村", row.quantity, "Wix受注");
     }
 
-    imported.add(row.orderNumber);
+    imported.add(rowKey);
     added++;
   }
 
