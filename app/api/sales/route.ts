@@ -42,7 +42,11 @@ export async function POST(req: NextRequest) {
   });
 
   const 移動先 = body.価格種別 === "陸上部卸値" ? "陸上部" : "顧客";
-  const 種別 = body.価格種別 === "陸上部卸値" ? "拠点間移動" : "販売";
+  const 種別 =
+    body.価格種別 === "陸上部卸値" ? "拠点間移動" :
+    body.価格種別 === "プレゼント" ? "プレゼント" :
+    body.価格種別 === "関係者割引" ? "販売関係者価格" :
+    "販売";
 
   await Promise.all([
     decreaseInventory(body.商品PageId ?? null, body.販売拠点, body.販売数 ?? 1),

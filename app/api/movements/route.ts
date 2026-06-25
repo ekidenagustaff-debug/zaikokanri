@@ -33,12 +33,15 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  const ACC_LOCATIONS = ["水上村", "町田寮"];
+
   const props: Record<string, unknown> = {
     商品名: { title: [{ text: { content: body.商品名 ?? "" } }] },
     日付: body.日付 ? { date: { start: body.日付 } } : { date: null },
     移動数: { number: body.移動数 ?? null },
     移動元: body.移動元 ? { select: { name: body.移動元 } } : { select: null },
     移動先: body.移動先 ? { select: { name: body.移動先 } } : { select: null },
+    種別: { select: { name: "拠点間移動" } },
     備考: { rich_text: [{ text: { content: body.備考 ?? "" } }] },
   };
   if (body.商品PageId) {
@@ -48,8 +51,6 @@ export async function POST(req: NextRequest) {
     parent: { data_source_id: DS.movements, type: "data_source_id" },
     properties: props as Parameters<typeof notion.pages.create>[0]["properties"],
   });
-
-  const ACC_LOCATIONS = ["水上村", "町田寮"];
 
   if (body.移動先 === "購買会") {
     // 陸上部 → 購買会 = 陸上部が購買会卸値で販売
