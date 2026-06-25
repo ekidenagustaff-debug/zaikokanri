@@ -184,6 +184,7 @@ export default function InventoryPage() {
   const [showRestockForm, setShowRestockForm] = useState(false);
   const [restockForm, setRestockForm] = useState(emptyRestockForm());
   const [restockSaving, setRestockSaving] = useState(false);
+  const [restockError, setRestockError] = useState<string | null>(null);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -212,12 +213,18 @@ export default function InventoryPage() {
   async function saveRestock() {
     if (!restockForm.商品PageId) return;
     setRestockSaving(true);
-    await fetch("/api/restock", {
+    setRestockError(null);
+    const res = await fetch("/api/restock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(restockForm),
     });
+    const data = await res.json();
     setRestockSaving(false);
+    if (!res.ok) {
+      setRestockError(data.error ?? "エラーが発生しました");
+      return;
+    }
     setShowRestockForm(false);
     setRestockForm(emptyRestockForm());
     fetchAll();
@@ -377,7 +384,7 @@ export default function InventoryPage() {
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-lg">入荷を記録</h2>
-              <button onClick={() => setShowRestockForm(false)} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+              <button onClick={() => { setShowRestockForm(false); setRestockError(null); }} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
             </div>
             <div className="space-y-3">
               <div>
@@ -422,6 +429,9 @@ export default function InventoryPage() {
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 />
               </div>
+              {restockError && (
+                <p className="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{restockError}</p>
+              )}
               <button
                 onClick={saveRestock}
                 disabled={restockSaving || !restockForm.商品PageId}
