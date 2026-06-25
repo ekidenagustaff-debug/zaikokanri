@@ -52,11 +52,13 @@ export default function DashboardPage() {
   const activeInventory = inventory.filter((p) => !p.アーカイブ);
 
   // 在庫アラート: マイナスまたは5個以下
-  const alerts = activeInventory.flatMap((p) =>
-    LOCATIONS.flatMap((loc) => {
+  type AlertLevel = "danger" | "warn";
+  type Alert = { 品名: string; loc: string; n: number; level: AlertLevel };
+  const alerts: Alert[] = activeInventory.flatMap((p) =>
+    LOCATIONS.flatMap((loc): Alert[] => {
       const n = (p as unknown as Record<string, number | null>)[loc] ?? 0;
-      if (n < 0) return [{ 品名: p.品名, loc, n, level: "danger" as const }];
-      if (n <= 5 && n > 0) return [{ 品名: p.品名, loc, n, level: "warn" as const }];
+      if (n < 0) return [{ 品名: p.品名, loc, n, level: "danger" }];
+      if (n <= 5 && n > 0) return [{ 品名: p.品名, loc, n, level: "warn" }];
       return [];
     })
   );
