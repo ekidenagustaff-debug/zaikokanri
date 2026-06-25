@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   const 種別 =
     body.価格種別 === "陸上部卸値" ? "拠点間移動" :
     body.価格種別 === "プレゼント" ? "プレゼント" :
-    body.価格種別 === "関係者割引" ? "販売関係者価格" :
+    body.価格種別 === "関係者割引" ? "販売(関係者価格)" :
     "販売";
 
   await Promise.all([

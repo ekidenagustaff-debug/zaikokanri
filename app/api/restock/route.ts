@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     移動数: qty,
     移動元: "仕入れ元",
     移動先: 拠点,
-    種別: "入荷",
+    種別: "在庫補充",
     備考: 備考 ?? "",
   });
 
