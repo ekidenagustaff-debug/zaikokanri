@@ -82,10 +82,10 @@ export async function POST() {
     await notion.pages.update({
       page_id: id,
       properties: {
-        水上村: { number: Math.max(0, computed.水上村) },
-        町田寮: { number: Math.max(0, computed.町田寮) },
-        陸上部: { number: Math.max(0, computed.陸上部) },
-        購買会: { number: Math.max(0, computed.購買会) },
+        水上村: { number: computed.水上村 },
+        町田寮: { number: computed.町田寮 },
+        陸上部: { number: computed.陸上部 },
+        購買会: { number: computed.購買会 },
       } as Parameters<typeof notion.pages.update>[0]["properties"],
     });
 

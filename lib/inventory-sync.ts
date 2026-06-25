@@ -27,7 +27,7 @@ export async function decreaseInventory(
 ): Promise<void> {
   if (!商品PageId || !LOCATION_PROPS.includes(拠点 as Location)) return;
   const { value: current, 品名 } = await getLocationValue(商品PageId, 拠点 as Location);
-  const next = Math.max(0, current - 数量);
+  const next = current - 数量;
   await notion.pages.update({
     page_id: 商品PageId,
     properties: { [拠点]: { number: next } },
