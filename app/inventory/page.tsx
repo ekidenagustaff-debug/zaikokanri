@@ -185,6 +185,7 @@ export default function InventoryPage() {
   const [restockForm, setRestockForm] = useState(emptyRestockForm());
   const [restockSaving, setRestockSaving] = useState(false);
   const [restockError, setRestockError] = useState<string | null>(null);
+  const [restockWarning, setRestockWarning] = useState<string | null>(null);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -210,14 +211,14 @@ export default function InventoryPage() {
     fetchAll();
   }
 
-  async function saveRestock() {
+  async function saveRestock(confirmed = false) {
     if (!restockForm.商品PageId) return;
     setRestockSaving(true);
     setRestockError(null);
     const res = await fetch("/api/restock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(restockForm),
+      body: JSON.stringify({ ...restockForm, confirmed }),
     });
     const data = await res.json();
     setRestockSaving(false);
@@ -225,8 +226,13 @@ export default function InventoryPage() {
       setRestockError(data.error ?? "エラーが発生しました");
       return;
     }
+    if (data.requiresConfirm) {
+      setRestockWarning(data.warning);
+      return;
+    }
     setShowRestockForm(false);
     setRestockForm(emptyRestockForm());
+    setRestockWarning(null);
     fetchAll();
   }
 
@@ -384,7 +390,7 @@ export default function InventoryPage() {
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-lg">入荷を記録</h2>
-              <button onClick={() => { setShowRestockForm(false); setRestockError(null); }} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+              <button onClick={() => { setShowRestockForm(false); setRestockError(null); setRestockWarning(null); }} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
             </div>
             <div className="space-y-3">
               <div>
@@ -432,13 +438,35 @@ export default function InventoryPage() {
               {restockError && (
                 <p className="text-red-600 text-sm bg-red-50 rounded-lg px-3 py-2">{restockError}</p>
               )}
-              <button
-                onClick={saveRestock}
-                disabled={restockSaving || !restockForm.商品PageId}
-                className="w-full bg-emerald-600 text-white py-2 rounded-lg disabled:opacity-50 font-semibold"
-              >
-                {restockSaving ? "保存中..." : "入荷を記録する"}
-              </button>
+              {restockWarning && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  <p className="text-amber-700 text-sm mb-2">{restockWarning}</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => saveRestock(true)}
+                      disabled={restockSaving}
+                      className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-1.5 rounded-lg text-sm font-semibold disabled:opacity-50"
+                    >
+                      {restockSaving ? "保存中..." : "このまま登録する"}
+                    </button>
+                    <button
+                      onClick={() => setRestockWarning(null)}
+                      className="flex-1 border border-slate-300 text-slate-600 py-1.5 rounded-lg text-sm"
+                    >
+                      修正する
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!restockWarning && (
+                <button
+                  onClick={() => saveRestock(false)}
+                  disabled={restockSaving || !restockForm.商品PageId}
+                  className="w-full bg-emerald-600 text-white py-2 rounded-lg disabled:opacity-50 font-semibold"
+                >
+                  {restockSaving ? "保存中..." : "入荷を記録する"}
+                </button>
+              )}
             </div>
           </div>
         </div>

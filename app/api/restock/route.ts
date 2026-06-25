@@ -38,13 +38,15 @@ export async function POST(req: NextRequest) {
     cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
   } while (cursor);
 
-  if (totalAllocated + qty > 仕入れ数) {
+  const overLimit = 仕入れ数 > 0 && totalAllocated + qty > 仕入れ数;
+  if (overLimit && !body.confirmed) {
     return NextResponse.json(
       {
-        error: `仕入れ数（${仕入れ数}個）を超えます。すでに${totalAllocated}個配分済みのため、あと${仕入れ数 - totalAllocated}個まで入荷できます。`,
+        warning: `仕入れ数（${仕入れ数}個）を超えます。すでに${totalAllocated}個配分済みのため、あと${仕入れ数 - totalAllocated}個の予定でした。このまま登録しますか？`,
         remaining: 仕入れ数 - totalAllocated,
+        requiresConfirm: true,
       },
-      { status: 400 },
+      { status: 200 },
     );
   }
 
