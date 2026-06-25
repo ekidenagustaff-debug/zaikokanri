@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 const links = [
   { href: "/", label: "ダッシュボード", icon: "⊞" },
   { href: "/inventory", label: "在庫", icon: "◫" },
+  { href: "/stock-log", label: "在庫変動", icon: "≈" },
   { href: "/sales", label: "販売記録", icon: "¥" },
   { href: "/products", label: "商品マスタ", icon: "≡" },
   { href: "/accounting", label: "会計", icon: "∑" },
