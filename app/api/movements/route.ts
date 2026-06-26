@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseMovement } from "@/lib/notion";
-import { decreaseInventory, increaseInventory } from "@/lib/inventory-sync";
 
 async function getProductPrices(商品PageId: string): Promise<{ 購買会卸値: number | null; 陸上部卸値: number | null }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,51 +52,39 @@ export async function POST(req: NextRequest) {
   });
 
   if (body.移動先 === "購買会") {
-    // 陸上部 → 購買会 = 陸上部が購買会卸値で販売
+    // 陸上部 → 購買会 = 購買会卸値で販売記録
     const prices = body.商品PageId ? await getProductPrices(body.商品PageId) : { 購買会卸値: null, 陸上部卸値: null };
     const 販売額 = prices.購買会卸値 != null ? prices.購買会卸値 * (body.移動数 ?? 0) : null;
-    await Promise.all([
-      decreaseInventory(body.商品PageId ?? null, body.移動元, body.移動数 ?? 0, "販売"),
-      notion.pages.create({
-        parent: { data_source_id: DS.sales, type: "data_source_id" },
-        properties: {
-          商品名: { title: [{ text: { content: body.商品名 ?? "" } }] },
-          日付: body.日付 ? { date: { start: body.日付 } } : { date: null },
-          販売数: { number: body.移動数 ?? null },
-          価格種別: { select: { name: "購買会卸値" } },
-          販売拠点: { select: { name: "購買会" } },
-          販売額: { number: 販売額 },
-          備考: { rich_text: [{ text: { content: body.備考 ?? "" } }] },
-          ...(body.商品PageId ? { 商品: { relation: [{ id: body.商品PageId }] } } : {}),
-        } as Parameters<typeof notion.pages.create>[0]["properties"],
-      }),
-    ]);
+    await notion.pages.create({
+      parent: { data_source_id: DS.sales, type: "data_source_id" },
+      properties: {
+        商品名: { title: [{ text: { content: body.商品名 ?? "" } }] },
+        日付: body.日付 ? { date: { start: body.日付 } } : { date: null },
+        販売数: { number: body.移動数 ?? null },
+        価格種別: { select: { name: "購買会卸値" } },
+        販売拠点: { select: { name: "購買会" } },
+        販売額: { number: 販売額 },
+        備考: { rich_text: [{ text: { content: body.備考 ?? "" } }] },
+        ...(body.商品PageId ? { 商品: { relation: [{ id: body.商品PageId }] } } : {}),
+      } as Parameters<typeof notion.pages.create>[0]["properties"],
+    });
   } else if (body.移動先 === "陸上部" && ACC_LOCATIONS.includes(body.移動元)) {
-    // ACC(水上村/町田寮) → 陸上部 = ACCが陸上部卸値で陸上部に販売
+    // ACC(水上村/町田寮) → 陸上部 = 陸上部卸値で販売記録
     const prices = body.商品PageId ? await getProductPrices(body.商品PageId) : { 購買会卸値: null, 陸上部卸値: null };
     const 販売額 = prices.陸上部卸値 != null ? prices.陸上部卸値 * (body.移動数 ?? 0) : null;
-    await Promise.all([
-      decreaseInventory(body.商品PageId ?? null, body.移動元, body.移動数 ?? 0, "在庫移動"),
-      increaseInventory(body.商品PageId ?? null, "陸上部", body.移動数 ?? 0, "在庫移動"),
-      notion.pages.create({
-        parent: { data_source_id: DS.sales, type: "data_source_id" },
-        properties: {
-          商品名: { title: [{ text: { content: body.商品名 ?? "" } }] },
-          日付: body.日付 ? { date: { start: body.日付 } } : { date: null },
-          販売数: { number: body.移動数 ?? null },
-          価格種別: { select: { name: "陸上部卸値" } },
-          販売拠点: { select: { name: body.移動元 } },
-          販売額: { number: 販売額 },
-          備考: { rich_text: [{ text: { content: body.備考 ? `${body.備考}（→陸上部）` : "→陸上部" } }] },
-          ...(body.商品PageId ? { 商品: { relation: [{ id: body.商品PageId }] } } : {}),
-        } as Parameters<typeof notion.pages.create>[0]["properties"],
-      }),
-    ]);
-  } else {
-    await Promise.all([
-      decreaseInventory(body.商品PageId ?? null, body.移動元, body.移動数 ?? 0, "在庫移動"),
-      increaseInventory(body.商品PageId ?? null, body.移動先, body.移動数 ?? 0, "在庫移動"),
-    ]);
+    await notion.pages.create({
+      parent: { data_source_id: DS.sales, type: "data_source_id" },
+      properties: {
+        商品名: { title: [{ text: { content: body.商品名 ?? "" } }] },
+        日付: body.日付 ? { date: { start: body.日付 } } : { date: null },
+        販売数: { number: body.移動数 ?? null },
+        価格種別: { select: { name: "陸上部卸値" } },
+        販売拠点: { select: { name: body.移動元 } },
+        販売額: { number: 販売額 },
+        備考: { rich_text: [{ text: { content: body.備考 ? `${body.備考}（→陸上部）` : "→陸上部" } }] },
+        ...(body.商品PageId ? { 商品: { relation: [{ id: body.商品PageId }] } } : {}),
+      } as Parameters<typeof notion.pages.create>[0]["properties"],
+    });
   }
 
   return NextResponse.json(parseMovement(page));

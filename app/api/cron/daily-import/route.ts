@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseSale } from "@/lib/notion";
 import { createProductIfNotExists } from "@/lib/product-sync";
-import { decreaseInventory } from "@/lib/inventory-sync";
+import { logMovement } from "@/lib/inventory-sync";
 
 async function getImportedOrderNumbers(): Promise<Set<string>> {
   const imported = new Set<string>();
@@ -135,7 +135,16 @@ export async function GET(req: NextRequest) {
           備考: { rich_text: [{ text: { content: `[Wix#${row.orderNumber}] ${row.customerName}` } }] },
         } as Parameters<typeof notion.pages.create>[0]["properties"],
       });
-      await decreaseInventory(商品PageId, "水上村", row.quantity);
+      await logMovement({
+        商品名,
+        商品PageId,
+        日付: row.orderDate,
+        移動数: row.quantity,
+        移動元: "水上村",
+        移動先: "顧客",
+        種別: "Wix受注",
+        備考: `[Wix#${row.orderNumber}] ${row.customerName}`,
+      });
     }
 
     imported.add(row.orderNumber);

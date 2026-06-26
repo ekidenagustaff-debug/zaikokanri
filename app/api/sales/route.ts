@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notion, DS, parseSale } from "@/lib/notion";
-import { decreaseInventory, logMovement } from "@/lib/inventory-sync";
+import { logMovement } from "@/lib/inventory-sync";
 
 export async function GET() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,7 +49,6 @@ export async function POST(req: NextRequest) {
     "販売";
 
   await Promise.all([
-    decreaseInventory(body.商品PageId ?? null, body.販売拠点, body.販売数 ?? 1),
     body.商品名 && body.商品名 !== "送料"
       ? logMovement({
           商品名: body.商品名,

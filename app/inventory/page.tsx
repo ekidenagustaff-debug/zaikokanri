@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
-import type { Product, MovementRecord, AuditLogRecord } from "@/lib/notion";
+import type { Product, MovementRecord } from "@/lib/notion";
 
 const LOCATIONS = ["水上村", "町田寮", "陸上部"] as const;
 const MOVE_DESTINATIONS = ["水上村", "町田寮", "陸上部", "購買会"] as const;
@@ -14,7 +14,7 @@ function HistorySection({
   onAddRestock,
 }: {
   movements: MovementRecord[];
-  restocks: AuditLogRecord[];
+  restocks: MovementRecord[];
   onAddMove: () => void;
   onAddRestock: () => void;
 }) {
@@ -115,10 +115,10 @@ function HistorySection({
                   <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-400 text-sm">記録がありません</td></tr>
                 ) : restocks.slice(0, 30).map((r) => (
                   <tr key={r.pageId} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-500">{r.日時.slice(0, 10)}</td>
+                    <td className="px-4 py-3 text-slate-500">{r.日付}</td>
                     <td className="px-4 py-3 text-slate-800">{r.商品名}</td>
-                    <td className="px-3 py-3 text-center font-semibold text-emerald-600">+{r.変動数}</td>
-                    <td className="px-3 py-3"><span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs">{r.拠点}</span></td>
+                    <td className="px-3 py-3 text-center font-semibold text-emerald-600">+{r.移動数}</td>
+                    <td className="px-3 py-3"><span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs">{r.移動先}</span></td>
                     <td className="px-3 py-3 text-slate-500">{r.備考}</td>
                   </tr>
                 ))}
@@ -132,11 +132,11 @@ function HistorySection({
               <div key={r.pageId} className="bg-white rounded-xl border border-slate-100 p-3 text-sm">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-medium text-slate-800">{r.商品名}</span>
-                  <span className="text-slate-400 text-xs">{r.日時.slice(0, 10)}</span>
+                  <span className="text-slate-400 text-xs">{r.日付}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">{r.拠点}</span>
-                  <span className="text-emerald-600 font-bold ml-auto">+{r.変動数}個</span>
+                  <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">{r.移動先}</span>
+                  <span className="text-emerald-600 font-bold ml-auto">+{r.移動数}個</span>
                 </div>
                 {r.備考 && <p className="text-slate-400 mt-1">{r.備考}</p>}
               </div>
@@ -176,7 +176,7 @@ const emptyRestockForm = () => ({
 export default function InventoryPage() {
   const [items, setItems] = useState<Product[]>([]);
   const [movements, setMovements] = useState<MovementRecord[]>([]);
-  const [restocks, setRestocks] = useState<AuditLogRecord[]>([]);
+  const [restocks, setRestocks] = useState<MovementRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMoveForm, setShowMoveForm] = useState(false);
   const [moveForm, setMoveForm] = useState(emptyMoveForm());
@@ -191,14 +191,13 @@ export default function InventoryPage() {
 
   async function fetchAll() {
     setLoading(true);
-    const [inv, mv, al] = await Promise.all([
+    const [inv, mv] = await Promise.all([
       fetch("/api/inventory").then((r) => r.json()),
       fetch("/api/movements").then((r) => r.json()),
-      fetch("/api/audit-log").then((r) => r.json()),
     ]);
     setItems(inv);
     setMovements(mv);
-    setRestocks((al as AuditLogRecord[]).filter((r) => r.原因 === "仕入れ"));
+    setRestocks((mv as MovementRecord[]).filter((r) => r.種別 === "在庫補充"));
     setLoading(false);
   }
 

@@ -9,7 +9,6 @@ export const DS = {
   products: process.env.NOTION_DB_PRODUCTS!,
   sales: process.env.NOTION_DB_SALES!,
   movements: process.env.NOTION_DB_MOVEMENTS!,
-  auditLog: process.env.NOTION_DB_AUDIT_LOG!,
   expenses: process.env.NOTION_DB_EXPENSES!,
 };
 
@@ -46,19 +45,6 @@ export type SaleRecord = {
   備考: string;
 };
 
-export type AuditLogRecord = {
-  pageId: string;
-  変動内容: string;
-  日時: string;
-  商品名: string;
-  商品PageId: string;
-  拠点: string;
-  変更前: number | null;
-  変更後: number | null;
-  変動数: number | null;
-  原因: string;
-  備考: string;
-};
 
 export type ExpenseRecord = {
   pageId: string;
@@ -149,24 +135,6 @@ export function parseSale(page: any): SaleRecord {
     価格種別: getSelect(props["価格種別"]),
     販売拠点: getSelect(props["販売拠点"]),
     販売額: getNumber(props["販売額"]),
-    備考: getRichText(props["備考"]),
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseAuditLog(page: any): AuditLogRecord {
-  const props = page.properties;
-  return {
-    pageId: page.id,
-    変動内容: getTitle(props["変動内容"]),
-    日時: (props["日時"] as { created_time?: string } | undefined)?.created_time ?? page.created_time ?? "",
-    商品名: getRichText(props["商品名"]),
-    商品PageId: getRichText(props["商品PageId"]),
-    拠点: getRichText(props["拠点"]),
-    変更前: getNumber(props["変更前"]),
-    変更後: getNumber(props["変更後"]),
-    変動数: getNumber(props["変動数"]),
-    原因: getSelect(props["原因"]),
     備考: getRichText(props["備考"]),
   };
 }
