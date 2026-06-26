@@ -15,33 +15,23 @@ type Movement = {
   備考: string;
 };
 
-type DayRow = {
-  date: string;
-  増加: Movement[];
-  減少: Movement[];
-  在庫数: number;
-};
-
 const LOCATIONS = ["水上村", "町田寮", "陸上部", "購買会"] as const;
 
 function Tooltip({ items, color }: { items: Movement[]; color: string }) {
   const [show, setShow] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const total = items.reduce((s, m) => s + (m.移動数 ?? 0), 0);
-
-  if (items.length === 0) return <span className="text-slate-200">—</span>;
-
+  if (items.length === 0) return <span className="text-slate-300">—</span>;
   return (
-    <div className="relative inline-block" ref={ref}
+    <div className="relative inline-block"
       onMouseEnter={() => setShow(true)}
       onMouseLeave={() => setShow(false)}>
       <span className={`cursor-default font-semibold ${color}`}>{total}</span>
       {show && (
-        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-slate-800 text-white text-xs rounded-xl shadow-xl p-3 space-y-1.5">
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 bg-slate-800 text-white text-xs rounded-xl shadow-xl p-3 space-y-1.5">
           {items.map((m) => (
             <div key={m.pageId} className="flex justify-between gap-2">
               <span className="text-slate-300 truncate">{m.種別}{m.備考 ? `・${m.備考}` : ""}</span>
-              <span className="font-bold shrink-0">{m.移動元}→{m.移動先} × {m.移動数}</span>
+              <span className="font-bold shrink-0">×{m.移動数}</span>
             </div>
           ))}
           <div className="border-t border-slate-600 pt-1.5 flex justify-between font-bold">
@@ -53,95 +43,104 @@ function Tooltip({ items, color }: { items: Movement[]; color: string }) {
   );
 }
 
+function stockColor(n: number) {
+  if (n < 0) return "text-red-600 font-bold";
+  if (n <= 5) return "text-amber-500 font-semibold";
+  return "text-slate-800";
+}
+
 export default function StockLogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState("");
+  const [loading, setLoading] = useState(true);
   const [selectedLocation, setSelectedLocation] = useState<string>("水上村");
 
   const today = new Date().toISOString().slice(0, 10);
-  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const [start, setStart] = useState(monthAgo);
+  const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [start, setStart] = useState(yearAgo);
   const [end, setEnd] = useState(today);
 
   useEffect(() => {
-    fetch("/api/products").then((r) => r.json()).then(setProducts);
+    Promise.all([
+      fetch("/api/products").then((r) => r.json()),
+      fetch("/api/movements").then((r) => r.json()),
+    ]).then(([p, m]) => {
+      setProducts(p);
+      setMovements(m);
+      setLoading(false);
+    });
   }, []);
 
-  async function load() {
-    setLoading(true);
-    const res = await fetch("/api/movements");
-    const data: Movement[] = await res.json();
-    setMovements(data);
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
-
-  // フィルタ
-  const filtered = movements.filter((m) => {
-    if (m.日付 < start || m.日付 > end) return false;
-    if (selectedProduct && m.商品PageId !== selectedProduct) return false;
-    // 選択拠点に関係する移動のみ
-    return m.移動元 === selectedLocation || m.移動先 === selectedLocation;
-  });
-
-  // 日付ごとに集計
-  const byDate = new Map<string, { 増加: Movement[]; 減少: Movement[] }>();
-  for (const m of filtered) {
-    if (!byDate.has(m.日付)) byDate.set(m.日付, { 増加: [], 減少: [] });
-    const day = byDate.get(m.日付)!;
-    if (m.移動先 === selectedLocation) day.増加.push(m);
-    if (m.移動元 === selectedLocation) day.減少.push(m);
-  }
-
-  // 日付一覧（範囲内全日付）
-  const allDates: string[] = [];
-  const cur = new Date(start);
-  const endDate = new Date(end);
-  while (cur <= endDate) {
-    allDates.push(cur.toISOString().slice(0, 10));
-    cur.setDate(cur.getDate() + 1);
-  }
-  allDates.reverse(); // 新しい順
-
-  // 開始残高を計算（期間より前の累積）
-  const beforeStart = movements.filter((m) => {
-    if (m.日付 >= start) return false;
-    if (selectedProduct && m.商品PageId !== selectedProduct) return false;
-    return m.移動元 === selectedLocation || m.移動先 === selectedLocation;
-  });
-  let runningStock = beforeStart.reduce((s, m) => {
-    if (m.移動先 === selectedLocation) return s + (m.移動数 ?? 0);
-    if (m.移動元 === selectedLocation) return s - (m.移動数 ?? 0);
-    return s;
-  }, 0);
-
-  // 古い順に在庫数を積み上げ
-  const rows: DayRow[] = [];
-  const ascDates = [...allDates].reverse();
-  const stockByDate = new Map<string, number>();
-  let stock = runningStock;
-  for (const date of ascDates) {
-    const day = byDate.get(date);
-    const inc = day?.増加.reduce((s, m) => s + (m.移動数 ?? 0), 0) ?? 0;
-    const dec = day?.減少.reduce((s, m) => s + (m.移動数 ?? 0), 0) ?? 0;
-    stock += inc - dec;
-    stockByDate.set(date, stock);
-  }
-
-  for (const date of allDates) {
-    const day = byDate.get(date);
-    rows.push({
-      date,
-      増加: day?.増加 ?? [],
-      減少: day?.減少 ?? [],
-      在庫数: stockByDate.get(date) ?? 0,
-    });
-  }
-
+  const loc = selectedLocation;
   const activeProducts = products.filter((p) => !p.アーカイブ);
+
+  // 期間内で拠点に関係する商品IDを収集
+  const relevantProductIds = new Set<string>();
+  for (const m of movements) {
+    if (m.日付 >= start && m.日付 <= end && (m.移動元 === loc || m.移動先 === loc) && m.商品PageId) {
+      relevantProductIds.add(m.商品PageId);
+    }
+  }
+
+  // 表示対象商品（アーカイブ除外、期間内に動きのあるもの）
+  const visibleProducts = activeProducts.filter((p) => relevantProductIds.has(p.pageId));
+
+  // 商品ごとの期間開始前の在庫数を計算
+  const initialStock = new Map<string, number>();
+  for (const p of visibleProducts) {
+    const before = movements.filter((m) =>
+      m.日付 < start && m.商品PageId === p.pageId &&
+      (m.移動元 === loc || m.移動先 === loc)
+    );
+    const s = before.reduce((acc, m) => {
+      if (m.移動先 === loc) return acc + (m.移動数 ?? 0);
+      if (m.移動元 === loc) return acc - (m.移動数 ?? 0);
+      return acc;
+    }, 0);
+    initialStock.set(p.pageId, s);
+  }
+
+  // 期間内の日付一覧（動きのある日のみ）
+  const activeDatesSet = new Set<string>();
+  for (const m of movements) {
+    if (m.日付 >= start && m.日付 <= end && (m.移動元 === loc || m.移動先 === loc)) {
+      activeDatesSet.add(m.日付);
+    }
+  }
+  const activeDates = [...activeDatesSet].sort().reverse(); // 新しい順
+
+  // 商品×日付の増加・減少マップ
+  type DayData = { 増加: Movement[]; 減少: Movement[] };
+  const grid = new Map<string, Map<string, DayData>>(); // productId → date → DayData
+  for (const p of visibleProducts) {
+    const byDate = new Map<string, DayData>();
+    for (const m of movements) {
+      if (m.商品PageId !== p.pageId) continue;
+      if (m.日付 < start || m.日付 > end) continue;
+      if (m.移動元 !== loc && m.移動先 !== loc) continue;
+      if (!byDate.has(m.日付)) byDate.set(m.日付, { 増加: [], 減少: [] });
+      const d = byDate.get(m.日付)!;
+      if (m.移動先 === loc) d.増加.push(m);
+      if (m.移動元 === loc) d.減少.push(m);
+    }
+    grid.set(p.pageId, byDate);
+  }
+
+  // 商品ごとに日付順に在庫数を積み上げ
+  const stockByProductDate = new Map<string, Map<string, number>>(); // productId → date → 在庫数
+  for (const p of visibleProducts) {
+    const byDate = grid.get(p.pageId)!;
+    const stockMap = new Map<string, number>();
+    let s = initialStock.get(p.pageId) ?? 0;
+    for (const date of [...activeDates].reverse()) {
+      const d = byDate.get(date);
+      const inc = d?.増加.reduce((acc, m) => acc + (m.移動数 ?? 0), 0) ?? 0;
+      const dec = d?.減少.reduce((acc, m) => acc + (m.移動数 ?? 0), 0) ?? 0;
+      s += inc - dec;
+      stockMap.set(date, s);
+    }
+    stockByProductDate.set(p.pageId, stockMap);
+  }
 
   return (
     <Shell>
@@ -149,16 +148,6 @@ export default function StockLogPage() {
 
       {/* フィルタ */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 mb-6 flex flex-wrap gap-4 items-end">
-        <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1.5">商品</label>
-          <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)}
-            className="border border-slate-200 rounded-xl px-3 py-2 text-sm min-w-48">
-            <option value="">すべての商品</option>
-            {activeProducts.map((p) => (
-              <option key={p.pageId} value={p.pageId}>{p.品名}</option>
-            ))}
-          </select>
-        </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 mb-1.5">拠点</label>
           <select value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)}
@@ -180,39 +169,68 @@ export default function StockLogPage() {
 
       {loading ? (
         <p className="text-slate-400 text-sm">読み込み中...</p>
+      ) : visibleProducts.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-6 py-10 text-center text-slate-400 text-sm">
+          この期間・拠点に変動はありません
+        </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500 font-medium">
-              <tr>
-                <th className="text-left px-5 py-3">日付</th>
-                <th className="text-center px-4 py-3">在庫数</th>
-                <th className="text-center px-4 py-3 text-emerald-600">増加</th>
-                <th className="text-center px-4 py-3 text-red-500">減少</th>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+          <table className="text-xs border-collapse" style={{ minWidth: `${180 + visibleProducts.length * 120}px` }}>
+            <thead>
+              {/* 商品名ヘッダー */}
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="sticky left-0 bg-slate-50 text-left px-4 py-2 text-slate-500 font-medium border-r border-slate-200 w-28">日付</th>
+                {visibleProducts.map((p) => (
+                  <th key={p.pageId} colSpan={3} className="px-2 py-2 text-center text-slate-700 font-semibold border-r border-slate-200 last:border-r-0">
+                    {p.品名}
+                  </th>
+                ))}
+              </tr>
+              {/* 在庫数/増加/減少 サブヘッダー */}
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="sticky left-0 bg-slate-50 border-r border-slate-200" />
+                {visibleProducts.map((p) => (
+                  <th key={p.pageId} colSpan={3} className="border-r border-slate-200 last:border-r-0">
+                    <div className="grid grid-cols-3">
+                      <span className="px-2 py-1.5 text-center text-slate-500 font-medium">在庫</span>
+                      <span className="px-2 py-1.5 text-center text-emerald-600 font-medium">増加</span>
+                      <span className="px-2 py-1.5 text-center text-red-500 font-medium">減少</span>
+                    </div>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.filter((r) => r.増加.length > 0 || r.減少.length > 0 || r.date === today).map((row) => (
-                <tr key={row.date} className="hover:bg-slate-50">
-                  <td className="px-5 py-3 text-slate-600">{row.date}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`font-bold ${row.在庫数 < 0 ? "text-red-600" : row.在庫数 <= 5 ? "text-amber-500" : "text-slate-800"}`}>
-                      {row.在庫数}
-                    </span>
+              {activeDates.map((date) => (
+                <tr key={date} className="hover:bg-slate-50">
+                  <td className="sticky left-0 bg-white hover:bg-slate-50 px-4 py-2.5 text-slate-500 border-r border-slate-200 whitespace-nowrap font-medium">
+                    {date}
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <Tooltip items={row.増加} color="text-emerald-600" />
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <Tooltip items={row.減少} color="text-red-500" />
-                  </td>
+                  {visibleProducts.map((p) => {
+                    const d = grid.get(p.pageId)?.get(date);
+                    const 在庫数 = stockByProductDate.get(p.pageId)?.get(date) ?? null;
+                    return (
+                      <td key={p.pageId} colSpan={3} className="border-r border-slate-200 last:border-r-0">
+                        <div className="grid grid-cols-3">
+                          <div className="px-2 py-2.5 text-center">
+                            {在庫数 !== null ? (
+                              <span className={stockColor(在庫数)}>{在庫数}</span>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
+                          </div>
+                          <div className="px-2 py-2.5 text-center">
+                            <Tooltip items={d?.増加 ?? []} color="text-emerald-600" />
+                          </div>
+                          <div className="px-2 py-2.5 text-center">
+                            <Tooltip items={d?.減少 ?? []} color="text-red-500" />
+                          </div>
+                        </div>
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
-              {rows.every((r) => r.増加.length === 0 && r.減少.length === 0) && (
-                <tr>
-                  <td colSpan={4} className="px-5 py-8 text-center text-slate-400">この期間に変動はありません</td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
