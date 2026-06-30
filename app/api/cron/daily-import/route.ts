@@ -16,7 +16,8 @@ async function getImportedOrderNumbers(): Promise<Set<string>> {
     res.results.filter((r: any) => r.properties).forEach((r: any) => {
       const sale = parseSale(r);
       const match = sale.備考.match(/\[Wix#(\d+)\]/);
-      if (match) imported.add(match[1]);
+      // 同一注文に複数商品があるため、注文番号＋商品名で重複判定する
+      if (match) imported.add(`${match[1]}|${sale.商品名}`);
     });
     cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
   } while (cursor);
@@ -108,7 +109,11 @@ export async function GET(req: NextRequest) {
   let added = 0, skipped = 0;
 
   for (const row of rows) {
-    if (imported.has(row.orderNumber)) {
+    const 商品名 = row.isShipping
+      ? "送料"
+      : [row.itemName, row.size, row.color ? `(${row.color})` : ""].filter(Boolean).join(" ");
+    const key = `${row.orderNumber}|${商品名}`;
+    if (imported.has(key)) {
       skipped++;
       continue;
     }
@@ -127,7 +132,6 @@ export async function GET(req: NextRequest) {
         } as Parameters<typeof notion.pages.create>[0]["properties"],
       });
     } else {
-      const 商品名 = [row.itemName, row.size, row.color ? `(${row.color})` : ""].filter(Boolean).join(" ");
       const 商品PageId = await createProductIfNotExists(商品名);
       await notion.pages.create({
         parent: { data_source_id: DS.sales, type: "data_source_id" },
@@ -154,7 +158,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    imported.add(row.orderNumber);
+    imported.add(key);
     added++;
   }
 

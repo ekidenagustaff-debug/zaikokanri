@@ -32,10 +32,8 @@ async function getImportedOrderNumbers(): Promise<Set<string>> {
       .forEach((r: any) => {
         const sale = parseSale(r);
         const match = sale.備考.match(/\[Wix#(\d+)\]/);
-        if (match) {
-          const key = sale.商品名 === "送料" ? `${match[1]}-shipping` : match[1];
-          imported.add(key);
-        }
+        // 同一注文に複数商品があるため、注文番号＋商品名で重複判定する
+        if (match) imported.add(`${match[1]}|${sale.商品名}`);
       });
     cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
   } while (cursor);
@@ -52,7 +50,10 @@ export async function POST(req: NextRequest) {
   let skipped = 0;
 
   for (const row of rows) {
-    const rowKey = row.isShipping ? `${row.orderNumber}-shipping` : row.orderNumber;
+    const 商品名 = row.isShipping
+      ? "送料"
+      : [row.itemName, row.size, row.color ? `(${row.color})` : ""].filter(Boolean).join(" ");
+    const rowKey = `${row.orderNumber}|${商品名}`;
     if (imported.has(rowKey)) {
       skipped++;
       continue;
@@ -63,10 +64,6 @@ export async function POST(req: NextRequest) {
       skipped++;
       continue;
     }
-
-    const 商品名 = row.isShipping
-      ? "送料"
-      : [row.itemName, row.size, row.color ? `(${row.color})` : ""].filter(Boolean).join(" ");
 
     if (row.isShipping) {
       // 送料は販売記録のみ登録（商品マスタ・在庫操作なし）
