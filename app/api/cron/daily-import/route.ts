@@ -38,8 +38,15 @@ export async function GET(req: NextRequest) {
   const SITE_ID = process.env.WIX_SITE_ID!;
   const url = "https://www.wixapis.com/stores/v2/orders/query";
 
-  const startTime = new Date(today).setHours(0, 0, 0, 0);
-  const endTime = new Date(today).setHours(23, 59, 59, 999);
+  // 直近 LOOKBACK_DAYS 日分をさかのぼって取り込む。
+  // cron が発火しなかった日があっても、次回の実行で取りこぼしを自動補完できる。
+  // 重複は注文番号でスキップされるため、範囲を広げても安全。
+  const LOOKBACK_DAYS = Number(req.nextUrl.searchParams.get("days") ?? 14);
+  // JST基準の日付境界をUTCミリ秒で算出（JST = UTC+9）
+  const JST_OFFSET = 9 * 60 * 60 * 1000;
+  const todayJstMidnight = new Date(today).getTime() - JST_OFFSET; // JST当日0時のUTC時刻
+  const startTime = todayJstMidnight - LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+  const endTime = todayJstMidnight + 24 * 60 * 60 * 1000 - 1; // JST当日23:59:59.999
 
   // Wix注文を取得
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,7 +72,7 @@ export async function GET(req: NextRequest) {
       const orderTime = new Date(order.dateCreated).getTime();
       if (orderTime < startTime || orderTime > endTime) return;
 
-      const orderDate = new Date(order.dateCreated).toISOString().slice(0, 10);
+      const orderDate = new Date(orderTime + JST_OFFSET).toISOString().slice(0, 10);
       const orderNumber = String(order.number);
       const buyer = order.buyerInfo || {};
       const billing = order.billingInfo?.address || {};
@@ -151,6 +158,6 @@ export async function GET(req: NextRequest) {
     added++;
   }
 
-  console.log(`[cron/daily-import] ${today}: added=${added}, skipped=${skipped}`);
-  return NextResponse.json({ date: today, added, skipped });
+  console.log(`[cron/daily-import] ${today} (lookback ${LOOKBACK_DAYS}d): added=${added}, skipped=${skipped}`);
+  return NextResponse.json({ date: today, lookbackDays: LOOKBACK_DAYS, added, skipped });
 }
