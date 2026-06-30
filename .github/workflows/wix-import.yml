@@ -1,0 +1,22 @@
+name: Wix注文の定期取り込み
+
+# Vercel Hobbyプランの cron はベストエフォート（1日1回・実行保証なし）のため、
+# 確実に動かす目的で GitHub Actions から取り込みエンドポイントを叩く。
+# /api/cron/daily-import は直近14日分をさかのぼるので、多少の実行漏れは自動補完される。
+
+on:
+  schedule:
+    # 1日2回（JST 09:00 / 23:00）。UTC基準で 00:00 と 14:00。
+    - cron: "0 0 * * *"
+    - cron: "0 14 * * *"
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wix注文を取り込む
+        run: |
+          curl -fsS \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/daily-import?days=14"
