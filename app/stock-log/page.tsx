@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Shell from "@/components/Shell";
 import type { Product } from "@/lib/notion";
 
@@ -70,17 +70,6 @@ export default function StockLogPage() {
       setLoading(false);
     });
   }, []);
-
-  // 上下の横スクロールバーを同期させる
-  const topScrollRef = useRef<HTMLDivElement>(null);
-  const tableScrollRef = useRef<HTMLDivElement>(null);
-  const syncScroll = (from: "top" | "table") => () => {
-    const top = topScrollRef.current;
-    const table = tableScrollRef.current;
-    if (!top || !table) return;
-    if (from === "top") table.scrollLeft = top.scrollLeft;
-    else top.scrollLeft = table.scrollLeft;
-  };
 
   const loc = selectedLocation;
   const activeProducts = products.filter((p) => !p.アーカイブ);
@@ -185,28 +174,23 @@ export default function StockLogPage() {
           この期間・拠点に変動はありません
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
-          {/* 上部の横スクロールバー（下の表と同期） */}
-          <div ref={topScrollRef} onScroll={syncScroll("top")} className="overflow-x-auto">
-            <div style={{ width: `${180 + visibleProducts.length * 120}px`, height: 1 }} />
-          </div>
-          <div ref={tableScrollRef} onScroll={syncScroll("table")} className="overflow-auto max-h-[70vh]">
-          <table className="text-xs border-collapse" style={{ minWidth: `${180 + visibleProducts.length * 120}px` }}>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-auto max-h-[85vh]">
+          <table className="text-xs border-separate border-spacing-0" style={{ minWidth: `${180 + visibleProducts.length * 120}px` }}>
             <thead>
               {/* 商品名ヘッダー */}
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="sticky left-0 top-0 z-30 bg-slate-50 text-left px-4 py-2 text-slate-500 font-medium border-r border-slate-200 w-28">日付</th>
+                <th className="sticky left-0 top-0 z-30 h-9 bg-slate-50 text-left px-4 text-slate-500 font-medium border-b border-r border-slate-200 w-28">日付</th>
                 {visibleProducts.map((p) => (
-                  <th key={p.pageId} colSpan={3} className="sticky top-0 z-20 bg-slate-50 px-2 py-2 text-center text-slate-700 font-semibold border-r border-slate-200 last:border-r-0">
+                  <th key={p.pageId} colSpan={3} className="sticky top-0 z-20 h-9 bg-slate-50 px-2 text-center text-slate-700 font-semibold border-b border-r border-slate-200 last:border-r-0">
                     {p.品名}
                   </th>
                 ))}
               </tr>
               {/* 在庫数/増加/減少 サブヘッダー */}
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="sticky left-0 top-[37px] z-30 bg-slate-50 border-r border-slate-200" />
+              <tr className="bg-slate-50">
+                <th className="sticky left-0 top-9 z-30 bg-slate-50 border-b border-r border-slate-200" />
                 {visibleProducts.map((p) => (
-                  <th key={p.pageId} colSpan={3} className="sticky top-[37px] z-20 bg-slate-50 border-r border-slate-200 last:border-r-0">
+                  <th key={p.pageId} colSpan={3} className="sticky top-9 z-20 bg-slate-50 border-b border-r border-slate-200 last:border-r-0">
                     <div className="grid grid-cols-3">
                       <span className="px-2 py-1.5 text-center text-slate-500 font-medium">在庫</span>
                       <span className="px-2 py-1.5 text-center text-emerald-600 font-medium">増加</span>
@@ -216,17 +200,17 @@ export default function StockLogPage() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {activeDates.map((date) => (
                 <tr key={date} className="hover:bg-slate-50">
-                  <td className="sticky left-0 z-10 bg-white hover:bg-slate-50 px-4 py-2.5 text-slate-500 border-r border-slate-200 whitespace-nowrap font-medium">
+                  <td className="sticky left-0 z-10 bg-white hover:bg-slate-50 px-4 py-2.5 text-slate-500 border-b border-r border-slate-100 whitespace-nowrap font-medium">
                     {date}
                   </td>
                   {visibleProducts.map((p) => {
                     const d = grid.get(p.pageId)?.get(date);
                     const 在庫数 = stockByProductDate.get(p.pageId)?.get(date) ?? null;
                     return (
-                      <td key={p.pageId} colSpan={3} className="border-r border-slate-200 last:border-r-0">
+                      <td key={p.pageId} colSpan={3} className="border-b border-r border-slate-100 last:border-r-0">
                         <div className="grid grid-cols-3">
                           <div className="px-2 py-2.5 text-center">
                             {在庫数 !== null ? (
@@ -249,7 +233,6 @@ export default function StockLogPage() {
               ))}
             </tbody>
           </table>
-          </div>
         </div>
       )}
     </Shell>
