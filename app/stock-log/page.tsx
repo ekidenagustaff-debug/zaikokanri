@@ -155,17 +155,18 @@ export default function StockLogPage() {
     const soldMap = new Map<string, number>();
     const stockMap = new Map<string, number>();
     let purchase = initialPurchase.get(p.pageId) ?? 0;
-    let sold = initialSold.get(p.pageId) ?? 0;
+    let soldCumulative = initialSold.get(p.pageId) ?? 0;
     for (const date of [...activeDates].reverse()) {
       const d = byDate.get(date);
       for (const m of d?.移動 ?? []) {
         const { isIn } = splitMovement(m);
         purchase += isIn ? (m.移動数 ?? 0) : -(m.移動数 ?? 0);
       }
-      sold += d?.販売.reduce((acc, m) => acc + (m.移動数 ?? 0), 0) ?? 0;
+      const soldToday = d?.販売.reduce((acc, m) => acc + (m.移動数 ?? 0), 0) ?? 0;
+      soldCumulative += soldToday;
       purchaseMap.set(date, purchase);
-      soldMap.set(date, sold);
-      stockMap.set(date, purchase - sold);
+      soldMap.set(date, soldToday); // 販売数はその日の分のみ（累計しない）
+      stockMap.set(date, purchase - soldCumulative);
     }
     purchaseByProductDate.set(p.pageId, purchaseMap);
     soldByProductDate.set(p.pageId, soldMap);
@@ -222,9 +223,9 @@ export default function StockLogPage() {
                 {visibleProducts.map((p) => (
                   <th key={p.pageId} colSpan={3} className="sticky top-9 z-20 bg-slate-50 border-b border-r border-slate-200 last:border-r-0">
                     <div className="grid grid-cols-3">
-                      <span className="px-2 py-1.5 text-center text-blue-600 font-medium">仕入数</span>
+                      <span className="px-2 py-1.5 text-center text-slate-500 font-medium">仕入数</span>
                       <span className="px-2 py-1.5 text-center text-slate-500 font-medium">在庫数</span>
-                      <span className="px-2 py-1.5 text-center text-red-500 font-medium">販売数</span>
+                      <span className="px-2 py-1.5 text-center text-slate-500 font-medium">販売数</span>
                     </div>
                   </th>
                 ))}
@@ -246,7 +247,7 @@ export default function StockLogPage() {
                         <div className="grid grid-cols-3">
                           <div className="px-2 py-2.5 text-center">
                             {仕入数 !== null ? (
-                              <Tooltip items={d?.移動 ?? []} color="text-blue-600" fixedTotal={仕入数} loc={loc} />
+                              <Tooltip items={d?.移動 ?? []} color="text-slate-800" fixedTotal={仕入数} loc={loc} />
                             ) : (
                               <span className="text-slate-300">—</span>
                             )}
@@ -260,7 +261,7 @@ export default function StockLogPage() {
                           </div>
                           <div className="px-2 py-2.5 text-center">
                             {販売数 !== null ? (
-                              <Tooltip items={d?.販売 ?? []} color="text-red-500" fixedTotal={販売数} loc={loc} />
+                              <Tooltip items={d?.販売 ?? []} color="text-slate-800" fixedTotal={販売数} loc={loc} />
                             ) : (
                               <span className="text-slate-300">—</span>
                             )}
