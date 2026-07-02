@@ -24,7 +24,9 @@ export default function AccountingPage() {
   const [form, setForm] = useState({ ...emptyForm });
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [period, setPeriod] = useState<string>("all"); // "all" または年（"2025"など）
+  const [period, setPeriod] = useState<string>("all"); // "all" | 年（"2025"） | "custom"
+  const [customStart, setCustomStart] = useState<string>("");
+  const [customEnd, setCustomEnd] = useState<string>("");
 
   async function load() {
     const [s, p, e] = await Promise.all([
@@ -46,7 +48,16 @@ export default function AccountingPage() {
     ),
   ).sort().reverse();
 
-  const inPeriod = (dateStr: string) => period === "all" || (dateStr ?? "").startsWith(period);
+  const inPeriod = (dateStr: string) => {
+    const d = dateStr ?? "";
+    if (period === "all") return true;
+    if (period === "custom") {
+      if (customStart && d < customStart) return false;
+      if (customEnd && d > customEnd) return false;
+      return true;
+    }
+    return d.startsWith(period);
+  };
   const fSales = sales.filter((s) => inPeriod(s.日付));
   const fExpenses = expenses.filter((e) => inPeriod(e.日付));
 
@@ -161,7 +172,7 @@ export default function AccountingPage() {
   return (
     <Shell>
       <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-xl font-bold text-slate-800">会計</h1>
           <select
             value={period}
@@ -172,7 +183,25 @@ export default function AccountingPage() {
             {years.map((y) => (
               <option key={y} value={y}>{y}年</option>
             ))}
+            <option value="custom">期間を指定...</option>
           </select>
+          {period === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm"
+              />
+              <span className="text-slate-400 text-sm">〜</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
+          )}
         </div>
         <button onClick={openNew} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow transition">
           ＋ 経費を追加
