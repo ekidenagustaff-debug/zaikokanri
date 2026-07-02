@@ -147,7 +147,7 @@ export default function DashboardPage() {
               <Link href="/sales" className="text-xs text-blue-500 hover:underline">すべて見る</Link>
             </div>
             <div className="divide-y divide-slate-100">
-              {sales.slice(0, 8).map((s) => (
+              {[...sales].sort((a, b) => (b.日付 ?? "").localeCompare(a.日付 ?? "")).slice(0, 8).map((s) => (
                 <div key={s.pageId} className="px-6 py-3 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-800">{s.商品名}</p>
