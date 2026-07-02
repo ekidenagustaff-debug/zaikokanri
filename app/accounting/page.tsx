@@ -61,16 +61,22 @@ export default function AccountingPage() {
   const byLocation: Record<string, number> = {};
   for (const s of sales) byLocation[s.販売拠点] = (byLocation[s.販売拠点] ?? 0) + (s.販売額 ?? 0);
 
-  const byProduct: Record<string, { 通常: number; 関係者: number; 陸上部: number; 購買会: number; 合計: number }> = {};
+  type ProductAgg = {
+    通常: number; 関係者: number; 陸上部: number; 購買会: number; 合計: number;
+    通常数: number; 関係者数: number; 陸上部数: number; 購買会数: number; 合計数: number;
+  };
+  const byProduct: Record<string, ProductAgg> = {};
   for (const s of sales) {
     const key = s.商品名;
-    if (!byProduct[key]) byProduct[key] = { 通常: 0, 関係者: 0, 陸上部: 0, 購買会: 0, 合計: 0 };
+    if (!byProduct[key]) byProduct[key] = { 通常: 0, 関係者: 0, 陸上部: 0, 購買会: 0, 合計: 0, 通常数: 0, 関係者数: 0, 陸上部数: 0, 購買会数: 0, 合計数: 0 };
     const amt = s.販売額 ?? 0;
+    const qty = s.販売数 ?? 0;
     byProduct[key].合計 += amt;
-    if (s.価格種別 === "通常価格") byProduct[key].通常 += amt;
-    else if (s.価格種別 === "関係者割引") byProduct[key].関係者 += amt;
-    else if (s.価格種別 === "陸上部卸値") byProduct[key].陸上部 += amt;
-    else if (s.価格種別 === "購買会卸値") byProduct[key].購買会 += amt;
+    byProduct[key].合計数 += qty;
+    if (s.価格種別 === "通常価格") { byProduct[key].通常 += amt; byProduct[key].通常数 += qty; }
+    else if (s.価格種別 === "関係者割引") { byProduct[key].関係者 += amt; byProduct[key].関係者数 += qty; }
+    else if (s.価格種別 === "陸上部卸値") { byProduct[key].陸上部 += amt; byProduct[key].陸上部数 += qty; }
+    else if (s.価格種別 === "購買会卸値") { byProduct[key].購買会 += amt; byProduct[key].購買会数 += qty; }
   }
 
   const byCategory: Record<string, number> = {};
@@ -100,11 +106,13 @@ export default function AccountingPage() {
       const 仕入れ額 = p.仕入れ額 ?? 0;
       const 売上 = Object.entries(byProduct).find(([k]) => k === p.品名)?.[1].合計 ?? 0;
       const 損益 = 売上 - 仕入れ額;
-      return { p, 仕入れ額, 売上, 損益 };
+      const 回収率 = 仕入れ額 > 0 ? (売上 / 仕入れ額) * 100 : null; // 仕入れ額の何％を売り上げたか
+      return { p, 仕入れ額, 売上, 損益, 回収率 };
     })
     .filter((r) => r.仕入れ額 > 0 || r.売上 > 0);
-  const plTotal = { 仕入れ額: plRows.reduce((s, r) => s + r.仕入れ額, 0), 売上: plRows.reduce((s, r) => s + r.売上, 0), 損益: 0 };
+  const plTotal = { 仕入れ額: plRows.reduce((s, r) => s + r.仕入れ額, 0), 売上: plRows.reduce((s, r) => s + r.売上, 0), 損益: 0, 回収率: null as number | null };
   plTotal.損益 = plTotal.売上 - plTotal.仕入れ額;
+  plTotal.回収率 = plTotal.仕入れ額 > 0 ? (plTotal.売上 / plTotal.仕入れ額) * 100 : null;
 
   function openNew() { setForm({ ...emptyForm }); setEditId(null); setShowForm(true); }
   function openEdit(e: ExpenseRecord) {
@@ -340,7 +348,7 @@ export default function AccountingPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
               <p className="text-sm font-bold text-slate-700">損益表（商品別）</p>
-              <p className="text-xs text-slate-400 mt-0.5">売上 − 仕入れ額 ＝ 損益</p>
+              <p className="text-xs text-slate-400 mt-0.5">売上 − 仕入れ額 ＝ 損益／回収率 ＝ 売上 ÷ 仕入れ額（仕入れ額の何％を売り上げたか）</p>
             </div>
             {/* Desktop */}
             <div className="hidden md:block overflow-x-auto">
@@ -350,15 +358,19 @@ export default function AccountingPage() {
                     <th className="text-left text-xs font-semibold text-slate-500 px-6 py-3">商品名</th>
                     <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">仕入れ額</th>
                     <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">売上</th>
+                    <th className="text-right text-xs font-semibold text-slate-500 px-4 py-3">回収率</th>
                     <th className="text-right text-xs font-semibold text-slate-500 px-6 py-3">損益</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {plRows.map(({ p, 仕入れ額, 売上, 損益 }) => (
+                  {plRows.map(({ p, 仕入れ額, 売上, 損益, 回収率 }) => (
                     <tr key={p.pageId} className="hover:bg-slate-50">
                       <td className="px-6 py-3 text-slate-800 font-medium">{p.品名}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-slate-600">¥{仕入れ額.toLocaleString()}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-slate-600">¥{売上.toLocaleString()}</td>
+                      <td className={`px-4 py-3 text-right tabular-nums font-medium ${回収率 === null ? "text-slate-300" : 回収率 >= 100 ? "text-emerald-600" : "text-slate-600"}`}>
+                        {回収率 === null ? "—" : `${回収率.toFixed(0)}%`}
+                      </td>
                       <td className={`px-6 py-3 text-right tabular-nums font-bold ${損益 >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                         {損益 >= 0 ? "+" : ""}¥{損益.toLocaleString()}
                       </td>
@@ -368,6 +380,9 @@ export default function AccountingPage() {
                     <td className="px-6 py-3 text-slate-700">合計</td>
                     <td className="px-4 py-3 text-right tabular-nums text-slate-700">¥{plTotal.仕入れ額.toLocaleString()}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-slate-700">¥{plTotal.売上.toLocaleString()}</td>
+                    <td className={`px-4 py-3 text-right tabular-nums font-bold ${plTotal.回収率 === null ? "text-slate-300" : plTotal.回収率 >= 100 ? "text-emerald-600" : "text-slate-700"}`}>
+                      {plTotal.回収率 === null ? "—" : `${plTotal.回収率.toFixed(0)}%`}
+                    </td>
                     <td className={`px-6 py-3 text-right tabular-nums font-bold ${plTotal.損益 >= 0 ? "text-emerald-600" : "text-red-600"}`}>
                       {plTotal.損益 >= 0 ? "+" : ""}¥{plTotal.損益.toLocaleString()}
                     </td>
@@ -377,7 +392,7 @@ export default function AccountingPage() {
             </div>
             {/* Mobile */}
             <div className="md:hidden divide-y divide-slate-100">
-              {plRows.map(({ p, 仕入れ額, 売上, 損益 }) => (
+              {plRows.map(({ p, 仕入れ額, 売上, 損益, 回収率 }) => (
                 <div key={p.pageId} className="px-5 py-4">
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-semibold text-slate-800 text-sm">{p.品名}</p>
@@ -385,9 +400,10 @@ export default function AccountingPage() {
                       {損益 >= 0 ? "+" : ""}¥{損益.toLocaleString()}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-center">
+                  <div className="grid grid-cols-3 gap-2 text-xs text-center">
                     <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">仕入れ額</p><p className="font-bold text-slate-700">¥{仕入れ額.toLocaleString()}</p></div>
                     <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">売上</p><p className="font-bold text-slate-700">¥{売上.toLocaleString()}</p></div>
+                    <div className="bg-slate-50 rounded-lg py-2"><p className="text-slate-400 mb-0.5">回収率</p><p className={`font-bold ${回収率 === null ? "text-slate-300" : 回収率 >= 100 ? "text-emerald-600" : "text-slate-700"}`}>{回収率 === null ? "—" : `${回収率.toFixed(0)}%`}</p></div>
                   </div>
                 </div>
               ))}
@@ -415,11 +431,11 @@ export default function AccountingPage() {
             ]}
             rows={Object.entries(byProduct).map(([name, data]) => ({
               name,
-              normal: `¥${data.通常.toLocaleString()}`,
-              member: `¥${data.関係者.toLocaleString()}`,
-              wholesale1: `¥${data.陸上部.toLocaleString()}`,
-              wholesale2: `¥${data.購買会.toLocaleString()}`,
-              total: `¥${data.合計.toLocaleString()}`,
+              normal: `¥${data.通常.toLocaleString()}（${data.通常数}個）`,
+              member: `¥${data.関係者.toLocaleString()}（${data.関係者数}個）`,
+              wholesale1: `¥${data.陸上部.toLocaleString()}（${data.陸上部数}個）`,
+              wholesale2: `¥${data.購買会.toLocaleString()}（${data.購買会数}個）`,
+              total: `¥${data.合計.toLocaleString()}（${data.合計数}個）`,
             }))}
           />
         </>
