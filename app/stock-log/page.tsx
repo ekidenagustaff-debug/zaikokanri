@@ -195,18 +195,18 @@ export default function StockLogPage() {
             <thead>
               {/* 商品名ヘッダー */}
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="sticky left-0 bg-slate-50 text-left px-4 py-2 text-slate-500 font-medium border-r border-slate-200 w-28">日付</th>
+                <th className="sticky left-0 top-0 z-30 bg-slate-50 text-left px-4 py-2 text-slate-500 font-medium border-r border-slate-200 w-28">日付</th>
                 {visibleProducts.map((p) => (
-                  <th key={p.pageId} colSpan={3} className="px-2 py-2 text-center text-slate-700 font-semibold border-r border-slate-200 last:border-r-0">
+                  <th key={p.pageId} colSpan={3} className="sticky top-0 z-20 bg-slate-50 px-2 py-2 text-center text-slate-700 font-semibold border-r border-slate-200 last:border-r-0">
                     {p.品名}
                   </th>
                 ))}
               </tr>
               {/* 在庫数/増加/減少 サブヘッダー */}
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="sticky left-0 bg-slate-50 border-r border-slate-200" />
+                <th className="sticky left-0 top-[37px] z-30 bg-slate-50 border-r border-slate-200" />
                 {visibleProducts.map((p) => (
-                  <th key={p.pageId} colSpan={3} className="border-r border-slate-200 last:border-r-0">
+                  <th key={p.pageId} colSpan={3} className="sticky top-[37px] z-20 bg-slate-50 border-r border-slate-200 last:border-r-0">
                     <div className="grid grid-cols-3">
                       <span className="px-2 py-1.5 text-center text-slate-500 font-medium">在庫</span>
                       <span className="px-2 py-1.5 text-center text-emerald-600 font-medium">増加</span>
@@ -219,7 +219,7 @@ export default function StockLogPage() {
             <tbody className="divide-y divide-slate-100">
               {activeDates.map((date) => (
                 <tr key={date} className="hover:bg-slate-50">
-                  <td className="sticky left-0 bg-white hover:bg-slate-50 px-4 py-2.5 text-slate-500 border-r border-slate-200 whitespace-nowrap font-medium">
+                  <td className="sticky left-0 z-10 bg-white hover:bg-slate-50 px-4 py-2.5 text-slate-500 border-r border-slate-200 whitespace-nowrap font-medium">
                     {date}
                   </td>
                   {visibleProducts.map((p) => {
