@@ -24,6 +24,7 @@ export default function AccountingPage() {
   const [form, setForm] = useState({ ...emptyForm });
   const [editId, setEditId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [period, setPeriod] = useState<string>("all"); // "all" または年（"2025"など）
 
   async function load() {
     const [s, p, e] = await Promise.all([
@@ -36,12 +37,25 @@ export default function AccountingPage() {
 
   useEffect(() => { load(); }, []);
 
+  // 期間フィルタ：データに存在する年の一覧（新しい順）
+  const years = Array.from(
+    new Set(
+      [...sales.map((s) => s.日付), ...expenses.map((e) => e.日付)]
+        .filter(Boolean)
+        .map((d) => d.slice(0, 4)),
+    ),
+  ).sort().reverse();
+
+  const inPeriod = (dateStr: string) => period === "all" || (dateStr ?? "").startsWith(period);
+  const fSales = sales.filter((s) => inPeriod(s.日付));
+  const fExpenses = expenses.filter((e) => inPeriod(e.日付));
+
   // ACC = 水上村・町田寮・オンライン、陸上部 = 陸上部・購買会
   const ACC_LOCS = new Set(["水上村", "町田寮", "オンライン"]);
   const RIKUJO_LOCS = new Set(["陸上部", "購買会"]);
 
-  const accSales = sales.filter((s) => ACC_LOCS.has(s.販売拠点));
-  const rikujoSales = sales.filter((s) => RIKUJO_LOCS.has(s.販売拠点));
+  const accSales = fSales.filter((s) => ACC_LOCS.has(s.販売拠点));
+  const rikujoSales = fSales.filter((s) => RIKUJO_LOCS.has(s.販売拠点));
 
   const accRevenue = accSales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
   const rikujoRevenue = rikujoSales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
@@ -51,22 +65,22 @@ export default function AccountingPage() {
     .filter((s) => s.価格種別 === "陸上部卸値")
     .reduce((s, r) => s + (r.販売額 ?? 0), 0);
 
-  const totalRevenue = sales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
+  const totalRevenue = fSales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
   const totalCost = products.reduce((s, p) => s + (p.仕入れ額 ?? 0), 0);
-  const totalExpenses = expenses.reduce((s, e) => s + (e.金額 ?? 0), 0);
+  const totalExpenses = fExpenses.reduce((s, e) => s + (e.金額 ?? 0), 0);
   const accProfit = accRevenue - totalCost - totalExpenses;
   const rikujoProfit = rikujoRevenue - rikujoCost;
   const profit = totalRevenue - totalCost - totalExpenses;
 
   const byLocation: Record<string, number> = {};
-  for (const s of sales) byLocation[s.販売拠点] = (byLocation[s.販売拠点] ?? 0) + (s.販売額 ?? 0);
+  for (const s of fSales) byLocation[s.販売拠点] = (byLocation[s.販売拠点] ?? 0) + (s.販売額 ?? 0);
 
   type ProductAgg = {
     通常: number; 関係者: number; 陸上部: number; 購買会: number; 合計: number;
     通常数: number; 関係者数: number; 陸上部数: number; 購買会数: number; 合計数: number;
   };
   const byProduct: Record<string, ProductAgg> = {};
-  for (const s of sales) {
+  for (const s of fSales) {
     const key = s.商品名;
     if (!byProduct[key]) byProduct[key] = { 通常: 0, 関係者: 0, 陸上部: 0, 購買会: 0, 合計: 0, 通常数: 0, 関係者数: 0, 陸上部数: 0, 購買会数: 0, 合計数: 0 };
     const amt = s.販売額 ?? 0;
@@ -80,7 +94,7 @@ export default function AccountingPage() {
   }
 
   const byCategory: Record<string, number> = {};
-  for (const e of expenses) byCategory[e.カテゴリ] = (byCategory[e.カテゴリ] ?? 0) + (e.金額 ?? 0);
+  for (const e of fExpenses) byCategory[e.カテゴリ] = (byCategory[e.カテゴリ] ?? 0) + (e.金額 ?? 0);
 
   // 販売総数を商品名別に集計
   const soldByName: Record<string, number> = {};
@@ -99,12 +113,16 @@ export default function AccountingPage() {
       return { p, 在庫, 販売総数, 仕入れ数, 差_個数 };
     });
 
+  // 損益表・照合表は仕入れ額/在庫が累計のため、期間フィルタを掛けず全期間で集計する
+  const lifetimeRevenueByName: Record<string, number> = {};
+  for (const s of sales) lifetimeRevenueByName[s.商品名] = (lifetimeRevenueByName[s.商品名] ?? 0) + (s.販売額 ?? 0);
+
   // 損益表（商品別：仕入れ額 vs 売上）
   const plRows = products
     .filter((p) => !p.アーカイブ)
     .map((p) => {
       const 仕入れ額 = p.仕入れ額 ?? 0;
-      const 売上 = Object.entries(byProduct).find(([k]) => k === p.品名)?.[1].合計 ?? 0;
+      const 売上 = lifetimeRevenueByName[p.品名] ?? 0;
       const 損益 = 売上 - 仕入れ額;
       const 回収率 = 仕入れ額 > 0 ? (売上 / 仕入れ額) * 100 : null; // 仕入れ額の何％を売り上げたか
       return { p, 仕入れ額, 売上, 損益, 回収率 };
@@ -142,9 +160,19 @@ export default function AccountingPage() {
 
   return (
     <Shell>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-slate-800">会計</h1>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700"
+          >
+            <option value="all">全期間</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}年</option>
+            ))}
+          </select>
         </div>
         <button onClick={openNew} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow transition">
           ＋ 経費を追加
@@ -226,8 +254,8 @@ export default function AccountingPage() {
               <p className="text-sm font-bold text-slate-700">経費一覧</p>
               <span className="text-sm text-slate-500">合計 <span className="font-bold text-slate-800">¥{totalExpenses.toLocaleString()}</span></span>
             </div>
-            {expenses.length === 0 ? (
-              <p className="text-slate-400 text-sm px-6 py-8 text-center">経費がまだ登録されていません</p>
+            {fExpenses.length === 0 ? (
+              <p className="text-slate-400 text-sm px-6 py-8 text-center">この期間の経費はありません</p>
             ) : (
               <>
                 {/* カテゴリ別内訳 */}
@@ -251,7 +279,7 @@ export default function AccountingPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {expenses.map((e) => (
+                      {fExpenses.map((e) => (
                         <tr key={e.pageId} className="hover:bg-slate-50 transition-colors">
                           <td className="px-6 py-3 text-sm text-slate-500 tabular-nums">{e.日付}</td>
                           <td className="px-4 py-3 text-sm text-slate-800 font-medium">{e.件名}</td>
@@ -270,7 +298,7 @@ export default function AccountingPage() {
                 </div>
                 {/* カード(モバイル) */}
                 <div className="md:hidden divide-y divide-slate-100">
-                  {expenses.map((e) => (
+                  {fExpenses.map((e) => (
                     <div key={e.pageId} className="px-5 py-4 flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{e.件名}</p>
@@ -294,7 +322,7 @@ export default function AccountingPage() {
           {/* 在庫照合表 */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
-              <p className="text-sm font-bold text-slate-700">在庫照合表</p>
+              <p className="text-sm font-bold text-slate-700">在庫照合表 <span className="text-xs font-normal text-slate-400">（全期間）</span></p>
               <p className="text-xs text-slate-400 mt-0.5">仕入れ数 − 在庫 − 販売総数 ＝ 差（0なら一致）</p>
             </div>
             {/* Desktop */}
@@ -347,7 +375,7 @@ export default function AccountingPage() {
           {/* 損益表 */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
-              <p className="text-sm font-bold text-slate-700">損益表（商品別）</p>
+              <p className="text-sm font-bold text-slate-700">損益表（商品別）<span className="text-xs font-normal text-slate-400">（全期間）</span></p>
               <p className="text-xs text-slate-400 mt-0.5">売上 − 仕入れ額 ＝ 損益／回収率 ＝ 売上 ÷ 仕入れ額（仕入れ額の何％を売り上げたか）</p>
             </div>
             {/* Desktop */}
