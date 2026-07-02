@@ -190,7 +190,7 @@ export default function StockLogPage() {
           <div ref={topScrollRef} onScroll={syncScroll("top")} className="overflow-x-auto">
             <div style={{ width: `${180 + visibleProducts.length * 120}px`, height: 1 }} />
           </div>
-          <div ref={tableScrollRef} onScroll={syncScroll("table")} className="overflow-x-auto">
+          <div ref={tableScrollRef} onScroll={syncScroll("table")} className="overflow-auto max-h-[70vh]">
           <table className="text-xs border-collapse" style={{ minWidth: `${180 + visibleProducts.length * 120}px` }}>
             <thead>
               {/* 商品名ヘッダー */}
