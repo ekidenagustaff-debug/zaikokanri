@@ -71,6 +71,17 @@ export default function StockLogPage() {
     });
   }, []);
 
+  // 上下の横スクロールバーを同期させる
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const syncScroll = (from: "top" | "table") => () => {
+    const top = topScrollRef.current;
+    const table = tableScrollRef.current;
+    if (!top || !table) return;
+    if (from === "top") table.scrollLeft = top.scrollLeft;
+    else top.scrollLeft = table.scrollLeft;
+  };
+
   const loc = selectedLocation;
   const activeProducts = products.filter((p) => !p.アーカイブ);
 
@@ -174,7 +185,12 @@ export default function StockLogPage() {
           この期間・拠点に変動はありません
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
+          {/* 上部の横スクロールバー（下の表と同期） */}
+          <div ref={topScrollRef} onScroll={syncScroll("top")} className="overflow-x-auto">
+            <div style={{ width: `${180 + visibleProducts.length * 120}px`, height: 1 }} />
+          </div>
+          <div ref={tableScrollRef} onScroll={syncScroll("table")} className="overflow-x-auto">
           <table className="text-xs border-collapse" style={{ minWidth: `${180 + visibleProducts.length * 120}px` }}>
             <thead>
               {/* 商品名ヘッダー */}
@@ -233,6 +249,7 @@ export default function StockLogPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </Shell>
