@@ -195,9 +195,11 @@ export default function InventoryPage() {
       fetch("/api/inventory").then((r) => r.json()),
       fetch("/api/movements").then((r) => r.json()),
     ]);
+    const byDateDesc = (a: MovementRecord, b: MovementRecord) => (b.日付 ?? "").localeCompare(a.日付 ?? "");
     setItems(inv);
-    setMovements(mv);
-    setRestocks((mv as MovementRecord[]).filter((r) => r.種別 === "在庫補充"));
+    // 在庫移動は「拠点間移動」のみ、日付の新しい順
+    setMovements((mv as MovementRecord[]).filter((m) => m.種別 === "拠点間移動").sort(byDateDesc));
+    setRestocks((mv as MovementRecord[]).filter((r) => r.種別 === "在庫補充").sort(byDateDesc));
     setLoading(false);
   }
 

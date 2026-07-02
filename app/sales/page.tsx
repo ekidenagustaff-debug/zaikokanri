@@ -78,10 +78,12 @@ export default function SalesPage() {
   const unitPrice = selectedProduct ? priceForType(selectedProduct, form.価格種別) : null;
   const 販売額 = unitPrice != null ? unitPrice * form.販売数 : null;
 
-  const filtered = sales.filter((s) => {
-    const kw = searchKeyword.toLowerCase();
-    return s.商品名.toLowerCase().includes(kw) || s.販売拠点.toLowerCase().includes(kw) || s.備考.toLowerCase().includes(kw);
-  });
+  const filtered = sales
+    .filter((s) => {
+      const kw = searchKeyword.toLowerCase();
+      return s.商品名.toLowerCase().includes(kw) || s.販売拠点.toLowerCase().includes(kw) || s.備考.toLowerCase().includes(kw);
+    })
+    .sort((a, b) => (b.日付 ?? "").localeCompare(a.日付 ?? ""));
 
   async function save() {
     if (!form.商品PageId) return;
