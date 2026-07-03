@@ -1,52 +1,49 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { notion, DS } from "@/lib/notion";
 import { getProductMap } from "@/lib/product-sync";
 
 // 1回のリクエストで処理する最大件数
-const BATCH_SIZE = 20;
+const BATCH_SIZE = 25;
 
-export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const cursor: string | undefined = body.cursor ?? undefined;
-
+// 「商品」リレーション未設定のレコードだけを毎回検索する。前回処理した分は
+// 自動的に対象から外れるため、1ページ内で処理しきれず取りこぼす問題や、
+// 編集で並び順がズレてカーソルが壊れる問題を受けない。
+// 送料レコードは商品に紐づかない仕様のため、はじめから対象から除外する。
+export async function POST() {
   const productMap = await getProductMap();
 
   const res = await notion.dataSources.query({
     data_source_id: DS.sales,
+    filter: {
+      and: [
+        { property: "商品", relation: { is_empty: true } },
+        { property: "商品名", title: { does_not_equal: "送料" } },
+      ],
+    },
     page_size: 100,
-    ...(cursor ? { start_cursor: cursor } : {}),
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const records = res.results.filter((r: any) => r.properties);
-  const nextCursor: string | null = res.has_more ? (res.next_cursor ?? null) : null;
 
   let fixed = 0;
-  let skipped = 0;
+  let unmatched = 0;
   let processed = 0;
 
   for (const record of records) {
     if (processed >= BATCH_SIZE) break;
+    processed++;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const props = (record as any).properties;
-    const relation: unknown[] = props["商品"]?.relation ?? [];
-    if (relation.length > 0) {
-      skipped++;
-      continue;
-    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const titleRuns: any[] = props["商品名"]?.title ?? [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const 商品名: string = titleRuns.map((t: any) => t.plain_text).join("");
-    if (!商品名 || 商品名 === "送料") {
-      skipped++;
-      continue;
-    }
 
-    let productId = productMap.get(商品名) ?? null;
-    if (!productId) {
+    let productId = 商品名 ? (productMap.get(商品名) ?? null) : null;
+    if (!productId && 商品名) {
       for (const [name, id] of productMap.entries()) {
         if (商品名.startsWith(name) || name.startsWith(商品名)) {
           productId = id;
@@ -56,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!productId) {
-      skipped++;
+      unmatched++;
       continue;
     }
 
@@ -67,13 +64,11 @@ export async function POST(req: NextRequest) {
       } as Parameters<typeof notion.pages.update>[0]["properties"],
     });
     fixed++;
-    processed++;
   }
 
   return NextResponse.json({
     fixed,
-    skipped,
-    done: nextCursor === null && processed < BATCH_SIZE,
-    nextCursor,
+    unmatched, // 商品マスタに一致する商品が見つからず修正できなかった件数
+    done: records.length === 0,
   });
 }
