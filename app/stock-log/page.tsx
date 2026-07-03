@@ -39,7 +39,7 @@ function Tooltip({ items, color, fixedTotal, loc }: { items: Movement[]; color: 
             );
           })}
           <div className="border-t border-slate-600 pt-1.5 flex justify-between font-bold">
-            <span>累計</span><span>{fixedTotal}</span>
+            <span>合計</span><span>{fixedTotal}</span>
           </div>
         </div>
       )}
@@ -145,7 +145,7 @@ export default function StockLogPage() {
     grid.set(p.pageId, byDate);
   }
 
-  // 商品ごとに日付順に仕入数・在庫数・販売数を積み上げ
+  // 商品ごとに日付順に仕入数（その日の分）・在庫数（累計残高）・販売数（その日の分）を計算
   const purchaseByProductDate = new Map<string, Map<string, number>>();
   const soldByProductDate = new Map<string, Map<string, number>>();
   const stockByProductDate = new Map<string, Map<string, number>>();
@@ -154,23 +154,38 @@ export default function StockLogPage() {
     const purchaseMap = new Map<string, number>();
     const soldMap = new Map<string, number>();
     const stockMap = new Map<string, number>();
-    let purchase = initialPurchase.get(p.pageId) ?? 0;
+    let purchaseCumulative = initialPurchase.get(p.pageId) ?? 0;
     let soldCumulative = initialSold.get(p.pageId) ?? 0;
     for (const date of [...activeDates].reverse()) {
       const d = byDate.get(date);
-      for (const m of d?.移動 ?? []) {
+      const purchaseToday = (d?.移動 ?? []).reduce((acc, m) => {
         const { isIn } = splitMovement(m);
-        purchase += isIn ? (m.移動数 ?? 0) : -(m.移動数 ?? 0);
-      }
+        return acc + (isIn ? (m.移動数 ?? 0) : -(m.移動数 ?? 0));
+      }, 0);
       const soldToday = d?.販売.reduce((acc, m) => acc + (m.移動数 ?? 0), 0) ?? 0;
+      purchaseCumulative += purchaseToday;
       soldCumulative += soldToday;
-      purchaseMap.set(date, purchase);
+      purchaseMap.set(date, purchaseToday); // 仕入数はその日の分のみ（累計しない）
       soldMap.set(date, soldToday); // 販売数はその日の分のみ（累計しない）
-      stockMap.set(date, purchase - soldCumulative);
+      stockMap.set(date, purchaseCumulative - soldCumulative);
     }
     purchaseByProductDate.set(p.pageId, purchaseMap);
     soldByProductDate.set(p.pageId, soldMap);
     stockByProductDate.set(p.pageId, stockMap);
+  }
+
+  // 総仕入数・現在の在庫数・総販売数（期間フィルタに関係なく全期間で集計）
+  const totalsByProduct = new Map<string, { 総仕入数: number; 現在庫: number; 総販売数: number }>();
+  for (const p of visibleProducts) {
+    const all = movements.filter((m) => m.商品PageId === p.pageId && (m.移動元 === loc || m.移動先 === loc));
+    let 総仕入数 = 0, 総販売数 = 0;
+    for (const m of all) {
+      const { isSale, isIn, isOut } = splitMovement(m);
+      if (isIn) 総仕入数 += m.移動数 ?? 0;
+      if (isOut) 総仕入数 -= m.移動数 ?? 0;
+      if (isSale) 総販売数 += m.移動数 ?? 0;
+    }
+    totalsByProduct.set(p.pageId, { 総仕入数, 現在庫: 総仕入数 - 総販売数, 総販売数 });
   }
 
   return (
@@ -229,6 +244,22 @@ export default function StockLogPage() {
                     </div>
                   </th>
                 ))}
+              </tr>
+              {/* 総仕入数/現在の在庫数/総販売数 サマリー行 */}
+              <tr className="bg-blue-50">
+                <th className="sticky left-0 top-[4.5rem] z-30 h-9 bg-blue-50 text-left px-4 text-slate-500 font-medium border-b-2 border-r border-slate-200">サマリー</th>
+                {visibleProducts.map((p) => {
+                  const t = totalsByProduct.get(p.pageId);
+                  return (
+                    <th key={p.pageId} colSpan={3} className="sticky top-[4.5rem] z-20 h-9 bg-blue-50 border-b-2 border-r border-slate-200 last:border-r-0">
+                      <div className="grid grid-cols-3">
+                        <span className="px-2 py-1.5 text-center font-bold text-slate-800">{t?.総仕入数 ?? "—"}</span>
+                        <span className={`px-2 py-1.5 text-center font-bold ${t ? stockColor(t.現在庫) : ""}`}>{t?.現在庫 ?? "—"}</span>
+                        <span className="px-2 py-1.5 text-center font-bold text-slate-800">{t?.総販売数 ?? "—"}</span>
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
