@@ -48,6 +48,10 @@ function Tooltip({ items, color, fixedTotal, loc }: { items: Movement[]; color: 
   );
 }
 
+function fullProductName(p: Product): string {
+  return `${p.品名}${p.サイズ ? ` ${p.サイズ}` : ""}${p.カラー ? ` (${p.カラー})` : ""}`;
+}
+
 function stockColor(n: number) {
   if (n < 0) return "text-red-600 font-bold";
   if (n <= 5) return "text-amber-500 font-semibold";
@@ -259,7 +263,7 @@ export default function StockLogPage() {
                         <span className="px-2 py-1.5 text-center">
                           {t ? (
                             <Link
-                              href={`/sales?productId=${p.pageId}&loc=${encodeURIComponent(loc)}`}
+                              href={`/sales?productId=${p.pageId}&name=${encodeURIComponent(fullProductName(p))}&loc=${encodeURIComponent(loc)}`}
                               className="font-bold text-slate-800 hover:underline"
                               title="この商品の販売記録を見る"
                             >
@@ -305,7 +309,7 @@ export default function StockLogPage() {
                             {販売数 !== null ? (
                               販売数 > 0 ? (
                                 <Link
-                                  href={`/sales?productId=${p.pageId}&date=${date}&loc=${encodeURIComponent(loc)}`}
+                                  href={`/sales?productId=${p.pageId}&name=${encodeURIComponent(fullProductName(p))}&date=${date}&loc=${encodeURIComponent(loc)}`}
                                   title="この日の販売記録を見る"
                                 >
                                   <Tooltip items={d?.販売 ?? []} color="text-slate-800 hover:underline" fixedTotal={販売数} loc={loc} />

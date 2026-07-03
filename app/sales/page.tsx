@@ -49,6 +49,7 @@ export default function SalesPage() {
 function SalesPageInner() {
   const searchParams = useSearchParams();
   const filterProductId = searchParams.get("productId");
+  const filterName = searchParams.get("name");
   const filterDate = searchParams.get("date");
   const filterLoc = searchParams.get("loc");
   const hasLinkFilter = Boolean(filterProductId || filterDate || filterLoc);
@@ -96,7 +97,12 @@ function SalesPageInner() {
 
   const filtered = sales
     .filter((s) => {
-      if (filterProductId && s.商品PageId !== filterProductId) return false;
+      if (filterProductId) {
+        // 商品リレーションが未設定の古いレコードも拾えるよう、商品名の完全一致もOKとする
+        const matchesById = s.商品PageId === filterProductId;
+        const matchesByName = filterName != null && s.商品名 === filterName;
+        if (!matchesById && !matchesByName) return false;
+      }
       if (filterDate && s.日付 !== filterDate) return false;
       if (filterLoc && s.販売拠点 !== filterLoc) return false;
       const kw = searchKeyword.toLowerCase();
