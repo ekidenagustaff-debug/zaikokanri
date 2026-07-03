@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const 商品名: string = props["商品名"]?.title?.[0]?.plain_text ?? "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const titleRuns: any[] = props["商品名"]?.title ?? [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const 商品名: string = titleRuns.map((t: any) => t.plain_text).join("");
     if (!商品名 || 商品名 === "送料") {
       skipped++;
       continue;
