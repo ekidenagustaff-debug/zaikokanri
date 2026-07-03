@@ -6,6 +6,7 @@ import type { Product } from "@/lib/notion";
 const emptyForm = (): Partial<Product> => ({
   品名: "",
   仕入れ数: undefined,
+  仕入れ日: new Date().toISOString().slice(0, 10),
   通常価格: undefined,
   関係者価格: undefined,
   陸上部卸値: undefined,
@@ -129,6 +130,7 @@ export default function ProductsPage() {
                   <th className="text-right px-3 py-3">原価</th>
                   <th className="text-right px-3 py-3">仕入れ数</th>
                   <th className="text-right px-3 py-3">仕入れ額</th>
+                  <th className="text-right px-3 py-3">仕入れ日</th>
                   <th className="w-24" />
                 </tr>
               </thead>
@@ -137,7 +139,7 @@ export default function ProductsPage() {
                 {archived.length > 0 && (
                   <>
                     <tr>
-                      <td colSpan={8} className="px-4 py-2 text-xs text-slate-400 bg-slate-50 font-medium">アーカイブ済み</td>
+                      <td colSpan={9} className="px-4 py-2 text-xs text-slate-400 bg-slate-50 font-medium">アーカイブ済み</td>
                     </tr>
                     {archived.map((p) => <ProductRow key={p.pageId} p={p} onEdit={openEdit} onToggleArchive={toggleArchive} archived />)}
                   </>
@@ -188,7 +190,17 @@ export default function ProductsPage() {
                 <Field label="原価（¥）">{numField("原価")}</Field>
                 <Field label="仕入れ数">{numField("仕入れ数")}</Field>
               </div>
-              <Field label="仕入れ額（¥）— 原価×仕入れ数で自動計算">{numField("仕入れ額")}</Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="仕入れ額（¥）— 原価×仕入れ数で自動計算">{numField("仕入れ額")}</Field>
+                <Field label="仕入れ日">
+                  <input
+                    type="date"
+                    value={(form.仕入れ日 as string) ?? ""}
+                    onChange={(e) => setForm({ ...form, 仕入れ日: e.target.value })}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                  />
+                </Field>
+              </div>
               <Field label="備考">
                 <input
                   type="text"
@@ -232,6 +244,7 @@ function ProductRow({ p, onEdit, onToggleArchive, archived }: {
       <td className="px-3 py-3 text-right text-slate-600">{yen(p.原価)}</td>
       <td className="px-3 py-3 text-right text-slate-600">{p.仕入れ数?.toLocaleString() ?? "-"}</td>
       <td className="px-3 py-3 text-right text-slate-600">{yen(p.仕入れ額)}</td>
+      <td className="px-3 py-3 text-right text-slate-500">{p.仕入れ日 || "-"}</td>
       <td className="px-3 py-3 text-right space-x-2">
         <button onClick={() => onEdit(p)} className="text-xs text-blue-500 hover:underline">編集</button>
         <button onClick={() => onToggleArchive(p)} className="text-xs text-slate-400 hover:underline">
@@ -267,6 +280,7 @@ function ProductCard({ p, onEdit, onToggleArchive, archived }: {
         <span>原価: {yen(p.原価)}</span>
         <span>仕入れ数: {p.仕入れ数?.toLocaleString() ?? "-"}</span>
         <span>仕入れ額: {yen(p.仕入れ額)}</span>
+        <span>仕入れ日: {p.仕入れ日 || "-"}</span>
       </div>
     </div>
   );

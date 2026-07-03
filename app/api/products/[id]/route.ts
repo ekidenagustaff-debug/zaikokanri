@@ -9,6 +9,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     properties: {
       品名: { title: [{ text: { content: body.品名 ?? "" } }] },
       仕入れ数: { number: body.仕入れ数 ?? null },
+      仕入れ日: body.仕入れ日 ? { date: { start: body.仕入れ日 } } : { date: null },
       通常価格: { number: body.通常価格 ?? null },
       関係者価格: { number: body.関係者価格 ?? null },
       陸上部卸値: { number: body.陸上部卸値 ?? null },

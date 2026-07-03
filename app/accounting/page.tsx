@@ -77,7 +77,9 @@ export default function AccountingPage() {
     .reduce((s, r) => s + (r.販売額 ?? 0), 0);
 
   const totalRevenue = fSales.reduce((s, r) => s + (r.販売額 ?? 0), 0);
-  const totalCost = products.reduce((s, p) => s + (p.仕入れ額 ?? 0), 0);
+  // 仕入れ額は選択期間内に仕入れた（仕入れ日が期間内の）商品のみ集計する
+  const fProducts = products.filter((p) => inPeriod(p.仕入れ日));
+  const totalCost = fProducts.reduce((s, p) => s + (p.仕入れ額 ?? 0), 0);
   const totalExpenses = fExpenses.reduce((s, e) => s + (e.金額 ?? 0), 0);
   const accProfit = accRevenue - totalCost - totalExpenses;
   const rikujoProfit = rikujoRevenue - rikujoCost;
@@ -217,7 +219,7 @@ export default function AccountingPage() {
             <h2 className="text-base font-bold text-slate-700 mb-3">ACC（水上村・町田寮）</h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
               <Card label="ACC売上" value={`¥${accRevenue.toLocaleString()}`} color="blue" />
-              <Card label="総仕入れ額" value={`¥${totalCost.toLocaleString()}`} color="slate" />
+              <Card label="仕入れ額（期間内）" value={`¥${totalCost.toLocaleString()}`} color="slate" />
               <Card label="経費合計" value={`¥${totalExpenses.toLocaleString()}`} color="orange" />
               <Card
                 label="ACC利益"

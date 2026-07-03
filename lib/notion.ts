@@ -18,6 +18,7 @@ export type Product = {
   サイズ: string;
   カラー: string;
   仕入れ数: number | null;
+  仕入れ日: string;
   通常価格: number | null;
   関係者価格: number | null;
   陸上部卸値: number | null;
@@ -106,6 +107,7 @@ export function parseProduct(page: any): Product {
     サイズ: getRichText(props["サイズ"]),
     カラー: getSelect(props["カラー"]),
     仕入れ数: getNumber(props["仕入れ数"]),
+    仕入れ日: getDate(props["仕入れ日"]),
     通常価格: getNumber(props["通常価格"]),
     関係者価格: getNumber(props["関係者価格"]),
     陸上部卸値: getNumber(props["陸上部卸値"]),
