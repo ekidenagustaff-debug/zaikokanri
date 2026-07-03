@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Shell from "@/components/Shell";
 import type { Product } from "@/lib/notion";
 
@@ -255,7 +256,17 @@ export default function StockLogPage() {
                       <div className="grid grid-cols-3">
                         <span className="px-2 py-1.5 text-center font-bold text-slate-800">{t?.総仕入数 ?? "—"}</span>
                         <span className={`px-2 py-1.5 text-center font-bold ${t ? stockColor(t.現在庫) : ""}`}>{t?.現在庫 ?? "—"}</span>
-                        <span className="px-2 py-1.5 text-center font-bold text-slate-800">{t?.総販売数 ?? "—"}</span>
+                        <span className="px-2 py-1.5 text-center">
+                          {t ? (
+                            <Link
+                              href={`/sales?productId=${p.pageId}&loc=${encodeURIComponent(loc)}`}
+                              className="font-bold text-slate-800 hover:underline"
+                              title="この商品の販売記録を見る"
+                            >
+                              {t.総販売数}
+                            </Link>
+                          ) : "—"}
+                        </span>
                       </div>
                     </th>
                   );
@@ -292,7 +303,16 @@ export default function StockLogPage() {
                           </div>
                           <div className="px-2 py-2.5 text-center">
                             {販売数 !== null ? (
-                              <Tooltip items={d?.販売 ?? []} color="text-slate-800" fixedTotal={販売数} loc={loc} />
+                              販売数 > 0 ? (
+                                <Link
+                                  href={`/sales?productId=${p.pageId}&date=${date}&loc=${encodeURIComponent(loc)}`}
+                                  title="この日の販売記録を見る"
+                                >
+                                  <Tooltip items={d?.販売 ?? []} color="text-slate-800 hover:underline" fixedTotal={販売数} loc={loc} />
+                                </Link>
+                              ) : (
+                                <span className="text-slate-800">{販売数}</span>
+                              )
                             ) : (
                               <span className="text-slate-300">—</span>
                             )}

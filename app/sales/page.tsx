@@ -1,5 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import Shell from "@/components/Shell";
 import ResponsiveTable from "@/components/ResponsiveTable";
 import type { Product, SaleRecord } from "@/lib/notion";
@@ -37,6 +39,20 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function SalesPage() {
+  return (
+    <Suspense>
+      <SalesPageInner />
+    </Suspense>
+  );
+}
+
+function SalesPageInner() {
+  const searchParams = useSearchParams();
+  const filterProductId = searchParams.get("productId");
+  const filterDate = searchParams.get("date");
+  const filterLoc = searchParams.get("loc");
+  const hasLinkFilter = Boolean(filterProductId || filterDate || filterLoc);
+
   const [tab, setTab] = useState<"manual" | "wix">("manual");
 
   // 販売記録
@@ -80,6 +96,9 @@ export default function SalesPage() {
 
   const filtered = sales
     .filter((s) => {
+      if (filterProductId && s.商品PageId !== filterProductId) return false;
+      if (filterDate && s.日付 !== filterDate) return false;
+      if (filterLoc && s.販売拠点 !== filterLoc) return false;
       const kw = searchKeyword.toLowerCase();
       return s.商品名.toLowerCase().includes(kw) || s.販売拠点.toLowerCase().includes(kw) || s.備考.toLowerCase().includes(kw);
     })
@@ -153,6 +172,19 @@ export default function SalesPage() {
         <>
           {loading ? <p className="text-slate-400 text-sm">読み込み中...</p> : (
             <>
+              {hasLinkFilter && (
+                <div className="bg-blue-50 text-blue-800 rounded-xl px-4 py-3 mb-4 text-sm flex items-center justify-between gap-3">
+                  <span>
+                    絞り込み中
+                    {filterDate ? `：${filterDate}` : ""}
+                    {filterLoc ? `・${filterLoc}` : ""}
+                    {filterProductId ? "・指定の商品" : ""}
+                  </span>
+                  <Link href="/sales" className="text-xs font-medium underline hover:no-underline shrink-0">
+                    絞り込みを解除
+                  </Link>
+                </div>
+              )}
               <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-4">
                 <input
                   type="text"
