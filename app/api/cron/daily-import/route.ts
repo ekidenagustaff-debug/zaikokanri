@@ -154,6 +154,7 @@ export async function GET(req: NextRequest) {
         移動元: "水上村",
         移動先: "顧客",
         種別: "Wix受注",
+        価格種別: "通常価格",
         備考: `[Wix#${row.orderNumber}] ${row.customerName}`,
       });
     }

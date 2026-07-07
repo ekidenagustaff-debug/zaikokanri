@@ -8,6 +8,7 @@ async function logMovement(params: {
   移動元: string;
   移動先: string;
   種別: string;
+  価格種別?: string;
   備考?: string;
 }): Promise<void> {
   const props: Record<string, unknown> = {
@@ -21,6 +22,9 @@ async function logMovement(params: {
   };
   if (params.商品PageId) {
     props["商品"] = { relation: [{ id: params.商品PageId }] };
+  }
+  if (params.価格種別) {
+    props["価格種別"] = { select: { name: params.価格種別 } };
   }
   await notion.pages.create({
     parent: { data_source_id: DS.movements, type: "data_source_id" },

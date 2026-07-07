@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
           移動元: body.販売拠点 ?? "水上村",
           移動先,
           種別,
+          価格種別: body.価格種別,
           備考: body.備考 ?? "",
         })
       : Promise.resolve(),
