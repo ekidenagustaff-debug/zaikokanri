@@ -31,7 +31,7 @@ export default function AccountingPage() {
   async function load() {
     const [s, p, e] = await Promise.all([
       fetch("/api/sales").then((r) => r.json()),
-      fetch("/api/products").then((r) => r.json()),
+      fetch("/api/inventory").then((r) => r.json()), // 在庫移動ログからライブ計算された在庫数を使う（商品マスタの静的な数値は更新のタイムラグがあるため）
       fetch("/api/expenses").then((r) => r.json()),
     ]);
     setSales(s); setProducts(p); setExpenses(e); setLoading(false);
